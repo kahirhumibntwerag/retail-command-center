@@ -5,7 +5,6 @@ import {
   FileSpreadsheet,
   Languages,
   LayoutDashboard,
-  Menu,
   RotateCcw,
   Search,
   Settings,
@@ -24,8 +23,26 @@ import { MONTH_LABEL } from '../data'
 import { segmentLabel } from '../engine'
 import { useStore } from '../store'
 import type { ViewId } from '../types'
+import { useDirection } from '@/components/ui/direction'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar'
 import { AdvisorSheet } from './AdvisorReport'
 import { Button, Drawer, Modal, Pill, Select, cx } from './kit'
 
@@ -69,7 +86,6 @@ const NAV: { groupAr: string; groupEn: string; items: { id: ViewId; ar: string; 
 
 export default function Shell({ children }: { children: ReactNode }) {
   const store = useStore()
-  const [navOpen, setNavOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [paletteIndex, setPaletteIndex] = useState(0)
@@ -152,67 +168,15 @@ export default function Shell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen">
+    <SidebarProvider>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
         {tx('تخطَّ إلى المحتوى', 'Skip to content')}
       </a>
-      <aside className={cx('fixed inset-y-0 start-0 z-30 w-[272px] border-e border-sidebar-border bg-sidebar/95 shadow-xl backdrop-blur', navOpen ? 'flex' : 'hidden lg:flex', 'flex-col')}>
-        <div className="flex items-center gap-3 px-4 py-5">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-            <Store size={20} />
-          </div>
-          <div>
-            <p className="text-sm font-semibold">{tx('مركز قيادة التجزئة', 'Retail Command')}</p>
-            <p className="text-xs text-muted-foreground">{tx('مصر · 27 فرعاً', 'Egypt · 27 stores')}</p>
-          </div>
-        </div>
-        <nav className="flex-1 space-y-4 overflow-y-auto px-3 pb-4" aria-label={tx('أقسام اللوحة', 'Dashboard sections')}>
-          {NAV.map((group) => (
-            <div key={group.groupEn}>
-              <p className="px-2 pb-1 text-[11px] tracking-[0.14em] text-muted-foreground uppercase">{tx(group.groupAr, group.groupEn)}</p>
-              <div className="space-y-1">
-                {group.items.map((item) => {
-                  const Icon = item.icon
-                  const active = store.view === item.id
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      aria-current={active ? 'page' : undefined}
-                      onClick={() => {
-                        store.setView(item.id)
-                        setNavOpen(false)
-                      }}
-                      className={cx(
-                        'flex min-h-11 w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-sm',
-                        active ? 'bg-primary font-semibold text-primary-foreground shadow-sm' : 'text-sidebar-foreground hover:bg-sidebar-accent',
-                      )}
-                    >
-                      <Icon size={16} />
-                      {tx(item.ar, item.en)}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-        </nav>
-        <div className="border-t border-sidebar-border p-3">
-          <button type="button" onClick={() => setConfirmReset(true)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-sm text-sidebar-foreground hover:bg-sidebar-accent">
-            <RotateCcw size={15} />
-            {tx('بيانات أغسطس الافتراضية', 'August sample data')}
-          </button>
-        </div>
-      </aside>
-
-      {navOpen && <button type="button" aria-label={tx('إغلاق القائمة', 'Close menu')} className="fixed inset-0 z-20 bg-black/50 lg:hidden" onClick={() => setNavOpen(false)} />}
-
-      <div className="min-w-0 lg:ps-[272px]">
+      <AppSidebar onReset={() => setConfirmReset(true)} />
+      <SidebarInset className="min-w-0 bg-transparent">
         <header className="sticky top-0 z-10 border-b border-border bg-background/80 px-3 py-2 shadow-sm backdrop-blur-md sm:px-4 sm:py-3">
           <div className="flex items-center gap-2">
-            <button type="button" className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-border bg-card lg:hidden" onClick={() => setNavOpen(true)} aria-label={tx('فتح القائمة', 'Open menu')}>
-              <Menu size={18} />
-            </button>
+            <SidebarTrigger className="size-11 shrink-0 border border-border bg-card" aria-label={tx('القائمة', 'Menu')} />
             {current && <p className="min-w-0 flex-1 truncate text-sm font-semibold">{tx(current.ar, current.en)}</p>}
             <button
               type="button"
@@ -329,8 +293,8 @@ export default function Shell({ children }: { children: ReactNode }) {
             </div>
           )}
         </header>
-        <main id="main" tabIndex={-1} className="min-w-0 px-3 py-4 outline-none sm:px-6 sm:py-5">{children}</main>
-      </div>
+        <div id="main" tabIndex={-1} className="min-w-0 px-3 py-4 outline-none sm:px-6 sm:py-5">{children}</div>
+      </SidebarInset>
 
       {store.toast && (
         <div role="status" aria-live="polite" className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full bg-primary py-1 ps-4 pe-1 text-sm font-medium text-primary-foreground shadow-lg">
@@ -460,7 +424,82 @@ export default function Shell({ children }: { children: ReactNode }) {
           </div>
         </Modal>
       )}
-    </div>
+    </SidebarProvider>
+  )
+}
+
+function AppSidebar({ onReset }: { onReset: () => void }) {
+  const store = useStore()
+  const direction = useDirection()
+  const { setOpenMobile } = useSidebar()
+  const { tx } = store
+  const tooltipSide = direction === 'rtl' ? 'left' : 'right'
+
+  return (
+    <Sidebar side={direction === 'rtl' ? 'right' : 'left'} collapsible="icon">
+      <SidebarHeader>
+        <div className="flex items-center gap-2 px-1 py-1">
+          <div className="grid size-8 shrink-0 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground">
+            <Store size={16} />
+          </div>
+          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+            <p className="truncate text-sm font-semibold">{tx('مركز قيادة التجزئة', 'Retail Command')}</p>
+            <p className="truncate text-xs text-muted-foreground">{tx('مصر · 27 فرعاً', 'Egypt · 27 stores')}</p>
+          </div>
+        </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <nav aria-label={tx('أقسام اللوحة', 'Dashboard sections')}>
+          {NAV.map((group) => (
+            <SidebarGroup key={group.groupEn}>
+              <SidebarGroupLabel>{tx(group.groupAr, group.groupEn)}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon
+                    const label = tx(item.ar, item.en)
+                    const active = store.view === item.id
+                    return (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton
+                          size="lg"
+                          isActive={active}
+                          aria-current={active ? 'page' : undefined}
+                          tooltip={{ children: label, side: tooltipSide }}
+                          className="data-active:bg-sidebar-primary data-active:font-semibold data-active:text-sidebar-primary-foreground data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
+                          onClick={() => {
+                            store.setView(item.id)
+                            setOpenMobile(false)
+                          }}
+                        >
+                          <Icon />
+                          <span>{label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </nav>
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="lg"
+              tooltip={{ children: tx('بيانات أغسطس الافتراضية', 'August sample data'), side: tooltipSide }}
+              onClick={onReset}
+            >
+              <RotateCcw />
+              <span>{tx('بيانات أغسطس الافتراضية', 'August sample data')}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
   )
 }
 
