@@ -7,7 +7,7 @@ import { useStore } from '../store'
 import { Input } from '@/components/ui/input'
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart'
 import { TipRow, chartAxis } from '../components/charts'
-import { Button, Drawer, PageHeader, Panel, Pill, Select, SortTh, TableWrap, useSort } from '../components/kit'
+import { Button, Drawer, PageHeader, Panel, Pill, Select, SortTh, Stat, TableWrap, useSort } from '../components/kit'
 
 const COACH: Record<CoachKind, { ar: string; en: string; tone: 'good' | 'warn' | 'bad' | 'gold' | 'neutral'; tipAr: string; tipEn: string }> = {
   star: { ar: 'نجم مبيعات', en: 'Star', tone: 'good', tipAr: 'اطلب منه تدريب زميل هذا الأسبوع، ولا تنقله من العملاء.', tipEn: 'Ask them to coach one peer this week. Do not pull them off customers.' },
@@ -98,7 +98,29 @@ export default function SellersView() {
         />
       </div>
 
-      <Panel>
+      <div className="flex flex-col gap-2 md:hidden">
+        {sorted.slice(0, 80).map((seller) => (
+          <article key={seller.id} className="rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-medium">{seller.name}</p>
+                <p className="text-xs text-muted-foreground">{seller.branchName} · #{seller.rank} {seller.floating ? tx('· متنقل', '· floating') : ''}</p>
+              </div>
+              <Pill tone={COACH[seller.coach].tone}>{tx(COACH[seller.coach].ar, COACH[seller.coach].en)}</Pill>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <Stat label={tx('المبيعات', 'Sales')} value={money(seller.sales, locale)} />
+              <Stat label="UPT" value={num(seller.upt, locale, 2)} />
+              <Stat label="ATV" value={money(seller.atv, locale)} />
+            </div>
+            <div className="mt-3">
+              <Button onClick={() => setId(seller.id)}>{tx('توجيه', 'Coach')}</Button>
+            </div>
+          </article>
+        ))}
+        {sorted.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">{tx('لا بائعين يطابقون البحث. امسح الاسم أو وسّع التصنيف.', 'No associates match. Clear the name or widen the classification.')}</p>}
+      </div>
+      <Panel className="hidden md:block">
         <TableWrap>
           <table className="w-full min-w-[860px] text-sm">
             <thead className="text-muted-foreground">

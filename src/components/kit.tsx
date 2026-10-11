@@ -225,8 +225,17 @@ export function Button({
   )
 }
 
-export function TableWrap({ children }: { children: ReactNode }) {
-  return <div className="max-w-full overflow-x-auto overscroll-x-contain">{children}</div>
+export function TableWrap({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cx('max-w-full overflow-x-auto overscroll-x-contain', className)}>{children}</div>
+}
+
+export function Stat({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="num mt-0.5 text-sm font-medium break-words">{value}</p>
+    </div>
+  )
 }
 
 export function useSort<T>(rows: T[], initial: keyof T, direction: 'asc' | 'desc' = 'desc') {

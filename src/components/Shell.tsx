@@ -5,7 +5,9 @@ import {
   FileSpreadsheet,
   Languages,
   LayoutDashboard,
+  Menu,
   RotateCcw,
+  SlidersHorizontal,
   Search,
   Settings,
   ShieldCheck,
@@ -39,11 +41,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarRail,
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
 import { AdvisorSheet } from './AdvisorReport'
+import { HandleSheet } from './HandleSheet'
 import { Button, Drawer, Modal, Pill, Select, cx } from './kit'
 
 const NAV: { groupAr: string; groupEn: string; items: { id: ViewId; ar: string; en: string; icon: typeof Store }[] }[] = [
@@ -130,13 +132,6 @@ export default function Shell({ children }: { children: ReactNode }) {
     h2: tx('النصف الثاني 16–31', 'Second half 16–31'),
     last7: tx('آخر 7 أيام 25–31', 'Last 7 days 25–31'),
   }
-  const deptLabels = {
-    all: tx('كل الأقسام', 'All departments'),
-    CASUAL: tx('كاجوال', 'Casual'),
-    JEANS: tx('جينز', 'Jeans'),
-    ACCESSORY: tx('إكسسوار', 'Accessory'),
-    DEFOU: tx('ديفو', 'Defou'),
-  }
   const branchName = filters.branchId === 'all'
     ? tx(`كل الفروع (${model.options.length})`, `All branches (${model.options.length})`)
     : model.options.find((branch) => branch.id === filters.branchId)?.name ?? filters.branchId
@@ -176,7 +171,7 @@ export default function Shell({ children }: { children: ReactNode }) {
       <SidebarInset className="min-w-0 bg-transparent">
         <header className="sticky top-0 z-10 border-b border-border bg-background/80 px-3 py-2 shadow-sm backdrop-blur-md sm:px-4 sm:py-3">
           <div className="flex items-center gap-2">
-            <SidebarTrigger className="size-11 shrink-0 border border-border bg-card" aria-label={tx('القائمة', 'Menu')} />
+            <SidebarTrigger className="size-11 shrink-0 border border-border bg-card md:hidden" aria-label={tx('القائمة', 'Menu')} />
             {current && <p className="min-w-0 flex-1 truncate text-sm font-semibold">{tx(current.ar, current.en)}</p>}
             <button
               type="button"
@@ -200,11 +195,11 @@ export default function Shell({ children }: { children: ReactNode }) {
               <span className="hidden md:inline">{tx('التنبيهات', 'Alerts')}</span>
               <span className={cx('rounded-full px-1.5 text-xs font-semibold text-white', criticalCount ? 'bg-[#ff6b7d]' : 'bg-white/15 text-[#f7f4ee]')}>{model.alerts.length}</span>
             </button>
-            <button type="button" onClick={() => store.setUploadOpen(true)} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/80" aria-label="Excel">
+            <button type="button" onClick={() => store.setUploadOpen(true)} className="hidden h-11 shrink-0 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/80 md:inline-flex" aria-label="Excel">
               <Upload size={16} />
               <span className="hidden md:inline">Excel</span>
             </button>
-            <button type="button" onClick={() => store.setLocale(locale === 'ar' ? 'en' : 'ar')} className="inline-flex h-11 shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-3 text-sm shadow-xs transition-colors hover:bg-accent" aria-label={tx('التبديل إلى الإنجليزية', 'Switch to Arabic')}>
+            <button type="button" onClick={() => store.setLocale(locale === 'ar' ? 'en' : 'ar')} className="hidden h-11 shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-3 text-sm shadow-xs transition-colors hover:bg-accent md:inline-flex" aria-label={tx('التبديل إلى الإنجليزية', 'Switch to Arabic')}>
               <Languages size={16} />{locale === 'ar' ? 'EN' : 'ع'}
             </button>
           </div>
@@ -214,90 +209,53 @@ export default function Shell({ children }: { children: ReactNode }) {
             <kbd className="ms-auto hidden rounded-md border border-border px-1.5 text-[11px] sm:inline">Ctrl K</kbd>
           </button>
           {store.view !== 'settings' && (
-            <div className="mt-3">
-              <div className="mb-2 flex items-center gap-2 overflow-x-auto">
-                <button type="button" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-border px-3 text-sm lg:hidden" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)}>
+            <>
+              <div className="mt-2 flex items-center gap-2 md:hidden">
+                <button type="button" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-border bg-card px-3 text-sm" onClick={() => setFiltersOpen(true)}>
+                  <SlidersHorizontal size={16} />
                   {tx('الفلاتر', 'Filters')}
                   {activeCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{activeCount}</span>}
                 </button>
-                <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground lg:sr-only">
-                  {periodLabels[filters.period]} · {segmentName} · {branchName} · {deptLabels[filters.dept]}
+                <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                  {periodLabels[filters.period]} · {segmentName} · {branchName}
                 </p>
-                <span className="hidden shrink-0 sm:contents">
-                  <Pill tone={datasetTone(store.dataset.source)}>{store.dataset.source === 'sample' ? tx('عينة أغسطس 2026', 'August 2026 sample') : store.dataset.sourceName}</Pill>
-                  {!settings.includeDoha && <Pill>{tx('الدوحة مستبعدة من الإجمالي', 'Doha excluded from the total')}</Pill>}
-                </span>
               </div>
-              <div className={cx('flex-wrap items-end gap-2', filtersOpen ? 'flex' : 'hidden', 'lg:flex')}>
-                <div className="flex w-full flex-wrap gap-2 sm:hidden">
+              <div className="mt-3 hidden md:block">
+                <div className="mb-2 flex items-center gap-2">
                   <Pill tone={datasetTone(store.dataset.source)}>{store.dataset.source === 'sample' ? tx('عينة أغسطس 2026', 'August 2026 sample') : store.dataset.sourceName}</Pill>
                   {!settings.includeDoha && <Pill>{tx('الدوحة مستبعدة من الإجمالي', 'Doha excluded from the total')}</Pill>}
                 </div>
-                <div className="flex w-full min-w-0 flex-col gap-1 sm:min-w-[180px] sm:flex-1">
-                  <Label className="text-[11px] text-muted-foreground">{tx('الفترة', 'Period')}</Label>
-                  <Select
-                    ariaLabel={tx('الفترة', 'Period')}
-                    value={filters.period}
-                    onValueChange={(value) => store.setFilters({ period: value as typeof filters.period })}
-                    options={[
-                      { value: 'full', label: periodLabels.full },
-                      { value: 'h1', label: periodLabels.h1 },
-                      { value: 'h2', label: periodLabels.h2 },
-                      { value: 'last7', label: periodLabels.last7 },
-                    ]}
-                  />
+                <div className="flex flex-wrap items-end gap-2">
+                  <FilterFields />
                 </div>
-                <div className="flex w-full min-w-0 flex-col gap-1 sm:min-w-[180px] sm:flex-1">
-                  <Label className="text-[11px] text-muted-foreground">{tx('الشريحة', 'Segment')}</Label>
-                  <Select
-                    ariaLabel={tx('الشريحة', 'Segment')}
-                    value={filters.segment}
-                    onValueChange={(value) => store.setFilters({ segment: value as typeof filters.segment })}
-                    options={[
-                      { value: 'all', label: tx('كل الشرائح', 'All segments') },
-                      ...(['Mall', 'Governorate', 'Outlet', 'Online', 'International'] as const).map((segment) => ({ value: segment, label: segmentLabel(segment, locale) })),
-                    ]}
-                  />
-                </div>
-                <div className="flex w-full min-w-0 flex-col gap-1 sm:min-w-[180px] sm:flex-1">
-                  <Label className="text-[11px] text-muted-foreground">{tx('الفرع', 'Branch')}</Label>
-                  <Select
-                    ariaLabel={tx('الفرع', 'Branch')}
-                    value={filters.branchId}
-                    onValueChange={(value) => { store.setFilters({ branchId: value }); store.setManagerId(value === 'all' ? store.managerId : value) }}
-                    options={[
-                      { value: 'all', label: tx(`كل الفروع (${model.options.length})`, `All branches (${model.options.length})`) },
-                      ...model.options.map((branch) => ({ value: branch.id, label: branch.name })),
-                    ]}
-                  />
-                </div>
-                <div className="flex w-full min-w-0 flex-col gap-1 sm:min-w-[180px] sm:flex-1">
-                  <Label className="text-[11px] text-muted-foreground">{tx('القسم', 'Department')}</Label>
-                  <Select
-                    ariaLabel={tx('القسم', 'Department')}
-                    value={filters.dept}
-                    onValueChange={(value) => store.setFilters({ dept: value as typeof filters.dept })}
-                    options={(Object.keys(deptLabels) as Array<keyof typeof deptLabels>).map((dept) => ({ value: dept, label: deptLabels[dept] }))}
-                  />
-                </div>
+                <ActiveChips />
               </div>
-              {activeCount > 0 && (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {filters.period !== 'full' && <FilterChip label={periodLabels[filters.period]} onClear={() => store.setFilters({ period: 'full' })} clearLabel={tx('إزالة', 'Remove')} />}
-                  {filters.segment !== 'all' && <FilterChip label={segmentName} onClear={() => store.setFilters({ segment: 'all' })} clearLabel={tx('إزالة', 'Remove')} />}
-                  {filters.branchId !== 'all' && <FilterChip label={branchName} onClear={() => store.setFilters({ branchId: 'all' })} clearLabel={tx('إزالة', 'Remove')} />}
-                  {filters.dept !== 'all' && <FilterChip label={deptLabels[filters.dept]} onClear={() => store.setFilters({ dept: 'all' })} clearLabel={tx('إزالة', 'Remove')} />}
-                  <button type="button" onClick={store.clearFilters} className="min-h-9 rounded-full px-2 text-xs text-primary underline-offset-2 hover:underline">{tx('مسح الفلاتر', 'Clear filters')}</button>
+              <div className="md:hidden">
+                <ActiveChips />
+              </div>
+              <HandleSheet open={filtersOpen} onOpenChange={setFiltersOpen} title={tx('الفلاتر', 'Filters')}>
+                <h2 className="text-lg font-semibold">{tx('تصفية الأرقام', 'Filter the numbers')}</h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Pill tone={datasetTone(store.dataset.source)}>{store.dataset.source === 'sample' ? tx('عينة أغسطس 2026', 'August 2026 sample') : store.dataset.sourceName}</Pill>
+                  {!settings.includeDoha && <Pill>{tx('الدوحة مستبعدة من الإجمالي', 'Doha excluded from the total')}</Pill>}
                 </div>
-              )}
-            </div>
+                <div className="mt-4 flex flex-col gap-3">
+                  <FilterFields />
+                </div>
+                <ActiveChips />
+                <div className="mt-4">
+                  <Button tone="gold" onClick={() => setFiltersOpen(false)}>{tx('تم', 'Done')}</Button>
+                </div>
+              </HandleSheet>
+            </>
           )}
         </header>
-        <div id="main" tabIndex={-1} className="min-w-0 px-3 py-4 outline-none sm:px-6 sm:py-5">{children}</div>
+        <div id="main" tabIndex={-1} className="min-w-0 px-3 py-4 pb-24 outline-none sm:px-6 md:py-5 md:pb-5">{children}</div>
+        <MobileTabBar />
       </SidebarInset>
 
       {store.toast && (
-        <div role="status" aria-live="polite" className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full bg-primary py-1 ps-4 pe-1 text-sm font-medium text-primary-foreground shadow-lg">
+        <div role="status" aria-live="polite" className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full bg-primary py-1 ps-4 pe-1 text-sm font-medium text-primary-foreground shadow-lg md:bottom-4">
           {store.toast}
           <button type="button" onClick={store.dismissToast} aria-label={tx('إخفاء الرسالة', 'Dismiss message')} className="grid h-9 w-9 place-items-center rounded-full hover:bg-black/10">
             <X size={16} />
@@ -436,7 +394,7 @@ function AppSidebar({ onReset }: { onReset: () => void }) {
   const tooltipSide = direction === 'rtl' ? 'left' : 'right'
 
   return (
-    <Sidebar side={direction === 'rtl' ? 'right' : 'left'} collapsible="icon">
+    <Sidebar side={direction === 'rtl' ? 'right' : 'left'} collapsible="none">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-1 py-1">
           <div className="grid size-8 shrink-0 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground">
@@ -486,6 +444,18 @@ function AppSidebar({ onReset }: { onReset: () => void }) {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem className="md:hidden">
+            <SidebarMenuButton size="lg" onClick={() => { store.setUploadOpen(true); setOpenMobile(false) }}>
+              <Upload />
+              <span>Excel</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem className="md:hidden">
+            <SidebarMenuButton size="lg" onClick={() => store.setLocale(store.locale === 'ar' ? 'en' : 'ar')}>
+              <Languages />
+              <span>{store.locale === 'ar' ? 'English' : 'العربية'}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
@@ -498,8 +468,144 @@ function AppSidebar({ onReset }: { onReset: () => void }) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
+  )
+}
+
+function FilterFields() {
+  const store = useStore()
+  const { tx, locale, model, filters } = store
+  const periodLabels = {
+    full: tx(`الشهر كاملاً (${MONTH_LABEL.ar})`, `Full month (${MONTH_LABEL.en})`),
+    h1: tx('النصف الأول 1–15', 'First half 1–15'),
+    h2: tx('النصف الثاني 16–31', 'Second half 16–31'),
+    last7: tx('آخر 7 أيام 25–31', 'Last 7 days 25–31'),
+  }
+  const deptLabels = {
+    all: tx('كل الأقسام', 'All departments'),
+    CASUAL: tx('كاجوال', 'Casual'),
+    JEANS: tx('جينز', 'Jeans'),
+    ACCESSORY: tx('إكسسوار', 'Accessory'),
+    DEFOU: tx('ديفو', 'Defou'),
+  }
+  return (
+    <>
+      <div className="flex w-full min-w-0 flex-col gap-1 md:min-w-[180px] md:flex-1">
+        <Label className="text-[11px] text-muted-foreground">{tx('الفترة', 'Period')}</Label>
+        <Select
+          ariaLabel={tx('الفترة', 'Period')}
+          value={filters.period}
+          onValueChange={(value) => store.setFilters({ period: value as typeof filters.period })}
+          options={[
+            { value: 'full', label: periodLabels.full },
+            { value: 'h1', label: periodLabels.h1 },
+            { value: 'h2', label: periodLabels.h2 },
+            { value: 'last7', label: periodLabels.last7 },
+          ]}
+        />
+      </div>
+      <div className="flex w-full min-w-0 flex-col gap-1 md:min-w-[180px] md:flex-1">
+        <Label className="text-[11px] text-muted-foreground">{tx('الشريحة', 'Segment')}</Label>
+        <Select
+          ariaLabel={tx('الشريحة', 'Segment')}
+          value={filters.segment}
+          onValueChange={(value) => store.setFilters({ segment: value as typeof filters.segment })}
+          options={[
+            { value: 'all', label: tx('كل الشرائح', 'All segments') },
+            ...(['Mall', 'Governorate', 'Outlet', 'Online', 'International'] as const).map((segment) => ({ value: segment, label: segmentLabel(segment, locale) })),
+          ]}
+        />
+      </div>
+      <div className="flex w-full min-w-0 flex-col gap-1 md:min-w-[180px] md:flex-1">
+        <Label className="text-[11px] text-muted-foreground">{tx('الفرع', 'Branch')}</Label>
+        <Select
+          ariaLabel={tx('الفرع', 'Branch')}
+          value={filters.branchId}
+          onValueChange={(value) => { store.setFilters({ branchId: value }); store.setManagerId(value === 'all' ? store.managerId : value) }}
+          options={[
+            { value: 'all', label: tx(`كل الفروع (${model.options.length})`, `All branches (${model.options.length})`) },
+            ...model.options.map((branch) => ({ value: branch.id, label: branch.name })),
+          ]}
+        />
+      </div>
+      <div className="flex w-full min-w-0 flex-col gap-1 md:min-w-[180px] md:flex-1">
+        <Label className="text-[11px] text-muted-foreground">{tx('القسم', 'Department')}</Label>
+        <Select
+          ariaLabel={tx('القسم', 'Department')}
+          value={filters.dept}
+          onValueChange={(value) => store.setFilters({ dept: value as typeof filters.dept })}
+          options={(Object.keys(deptLabels) as Array<keyof typeof deptLabels>).map((dept) => ({ value: dept, label: deptLabels[dept] }))}
+        />
+      </div>
+    </>
+  )
+}
+
+function ActiveChips() {
+  const store = useStore()
+  const { tx, locale, model, filters } = store
+  const periodLabels = {
+    full: tx(`الشهر كاملاً (${MONTH_LABEL.ar})`, `Full month (${MONTH_LABEL.en})`),
+    h1: tx('النصف الأول 1–15', 'First half 1–15'),
+    h2: tx('النصف الثاني 16–31', 'Second half 16–31'),
+    last7: tx('آخر 7 أيام 25–31', 'Last 7 days 25–31'),
+  }
+  const deptLabels = {
+    all: tx('كل الأقسام', 'All departments'),
+    CASUAL: tx('كاجوال', 'Casual'),
+    JEANS: tx('جينز', 'Jeans'),
+    ACCESSORY: tx('إكسسوار', 'Accessory'),
+    DEFOU: tx('ديفو', 'Defou'),
+  }
+  const branchName = filters.branchId === 'all'
+    ? ''
+    : model.options.find((branch) => branch.id === filters.branchId)?.name ?? filters.branchId
+  const segmentName = filters.segment === 'all' ? '' : segmentLabel(filters.segment, locale)
+  const active = filters.period !== 'full' || filters.segment !== 'all' || filters.branchId !== 'all' || filters.dept !== 'all'
+  if (!active) return null
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      {filters.period !== 'full' && <FilterChip label={periodLabels[filters.period]} onClear={() => store.setFilters({ period: 'full' })} clearLabel={tx('إزالة', 'Remove')} />}
+      {filters.segment !== 'all' && <FilterChip label={segmentName} onClear={() => store.setFilters({ segment: 'all' })} clearLabel={tx('إزالة', 'Remove')} />}
+      {filters.branchId !== 'all' && <FilterChip label={branchName} onClear={() => store.setFilters({ branchId: 'all' })} clearLabel={tx('إزالة', 'Remove')} />}
+      {filters.dept !== 'all' && <FilterChip label={deptLabels[filters.dept]} onClear={() => store.setFilters({ dept: 'all' })} clearLabel={tx('إزالة', 'Remove')} />}
+      <button type="button" onClick={store.clearFilters} className="min-h-9 rounded-full px-2 text-xs text-primary underline-offset-2 hover:underline">{tx('مسح الفلاتر', 'Clear filters')}</button>
+    </div>
+  )
+}
+
+const PHONE_TABS: { id: ViewId; ar: string; en: string }[] = [
+  { id: 'executive', ar: 'النظرة', en: 'Home' },
+  { id: 'branches', ar: 'الفروع', en: 'Stores' },
+  { id: 'sellers', ar: 'البائعون', en: 'Sellers' },
+  { id: 'inventory', ar: 'المخزون', en: 'Stock' },
+]
+
+function MobileTabBar() {
+  const store = useStore()
+  const { openMobile, setOpenMobile } = useSidebar()
+  const { tx } = store
+  const items = PHONE_TABS.map((tab) => ({ ...tab, icon: NAV.flatMap((group) => group.items).find((item) => item.id === tab.id)!.icon }))
+  const inTab = PHONE_TABS.some((tab) => tab.id === store.view)
+  return (
+    <nav aria-label={tx('التنقل السريع', 'Primary navigation')} className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
+      <div className="grid grid-cols-5">
+        {items.map((item) => {
+          const Icon = item.icon
+          const active = store.view === item.id
+          return (
+            <button key={item.id} type="button" aria-current={active ? 'page' : undefined} onClick={() => store.setView(item.id)} className={cx('flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 text-[11px]', active ? 'font-medium text-primary' : 'text-muted-foreground')}>
+              <Icon size={18} />
+              <span className="max-w-full truncate">{tx(item.ar, item.en)}</span>
+            </button>
+          )
+        })}
+        <button type="button" aria-expanded={openMobile} onClick={() => setOpenMobile(true)} className={cx('flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 text-[11px]', !inTab ? 'font-medium text-primary' : 'text-muted-foreground')}>
+          <Menu size={18} />
+          <span>{tx('المزيد', 'More')}</span>
+        </button>
+      </div>
+    </nav>
   )
 }
 

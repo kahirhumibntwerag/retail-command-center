@@ -5,7 +5,7 @@ import { num, percent } from '../format'
 import { useStore } from '../store'
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { TipRow, chartAxis } from '../components/charts'
-import { Button, PageHeader, Panel, Pill, Seg, TableWrap } from '../components/kit'
+import { Button, PageHeader, Panel, Pill, Seg, Stat, TableWrap } from '../components/kit'
 
 type Tab = 'pareto' | 'allocation' | 'dcs' | 'dead'
 
@@ -66,7 +66,24 @@ export default function AssortmentView() {
               <Line yAxisId="c" dataKey="cumulative" stroke="var(--color-cumulative)" strokeWidth={2.5} dot={false} />
             </ComposedChart>
           </ChartContainer>
-          <TableWrap>
+          <div className="mt-4 flex flex-col gap-2 md:hidden">
+            {model.pareto.map((row, index) => (
+              <article key={row.model.code} className="rounded-2xl bg-muted/50 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">#{index + 1} · {row.model.code}</p>
+                    <p className="font-medium">{row.model.name}</p>
+                  </div>
+                  <Pill tone={row.tier === '50' ? 'gold' : row.tier === '80' ? 'neutral' : 'warn'}>{row.tier === 'tail' ? tx('ذيل', 'Long tail') : row.tier === '50' ? '50%' : '80%'}</Pill>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <Stat label={tx('القطع', 'Units')} value={num(row.model.units, locale)} />
+                  <Stat label={tx('تراكمي', 'Cumulative')} value={percent(row.cumulative, locale, 1)} />
+                </div>
+              </article>
+            ))}
+          </div>
+          <TableWrap className="hidden md:block">
             <table className="mt-4 w-full min-w-[640px] text-sm">
               <thead className="text-muted-foreground"><tr><th className="px-2 py-2 text-start">#</th><th className="px-2 py-2 text-start">{tx('الكود', 'Code')}</th><th className="px-2 py-2 text-start">{tx('الوصف', 'Description')}</th><th className="px-2 py-2 text-start">{tx('القطع', 'Units')}</th><th className="px-2 py-2 text-start">{tx('تراكمي', 'Cumulative')}</th><th className="px-2 py-2 text-start">{tx('الشريحة', 'Tier')}</th></tr></thead>
               <tbody>

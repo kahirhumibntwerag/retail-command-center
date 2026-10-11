@@ -163,21 +163,6 @@ function Sidebar({
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
-  if (collapsible === "none") {
-    return (
-      <div
-        data-slot="sidebar"
-        className={cn(
-          "flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground",
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </div>
-    )
-  }
-
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
@@ -201,6 +186,21 @@ function Sidebar({
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
       </Sheet>
+    )
+  }
+
+  if (collapsible === "none") {
+    return (
+      <div
+        data-slot="sidebar"
+        className={cn(
+          "hidden w-(--sidebar-width) shrink-0 flex-col bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:flex md:h-svh md:overflow-hidden",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </div>
     )
   }
 

@@ -7,7 +7,7 @@ import { useStore } from '../store'
 import type { Segment } from '../types'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
 import { MoneyTooltip, chartAxis } from '../components/charts'
-import { Button, cx, Drawer, PageHeader, Panel, Pill, SortTh, TableWrap, useSort } from '../components/kit'
+import { Button, cx, Drawer, PageHeader, Panel, Pill, SortTh, Stat, TableWrap, useSort } from '../components/kit'
 
 export default function BranchesView() {
   const { model, locale, tx, setView, setManagerId, setFilters, filters } = useStore()
@@ -31,7 +31,22 @@ export default function BranchesView() {
           </button>
         ))}
       </div>
-      <Panel>
+      <div className="flex flex-col gap-2 md:hidden">
+        {sorted.map((branch) => (
+          <button key={branch.id} type="button" onClick={() => setOpenId(branch.id)} className="rounded-2xl bg-card p-3 text-start ring-1 ring-foreground/10">
+            <span className="font-medium">{branch.name}</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">{segmentLabel(branch.segment, locale)} · {branch.staff} {tx('بائعين', 'associates')}</span>
+            <span className="num mt-2 block text-lg font-semibold">{money(branch.included ? branch.periodSalesEgp : branch.periodSales, locale, branch.included ? 'EGP' : branch.currency)}</span>
+            <span className="mt-2 grid grid-cols-2 gap-2">
+              <Stat label={tx('الحصة', 'Share')} value={branch.included ? percent(branch.share, locale) : tx('مستبعد', 'Excluded')} />
+              <Stat label="ATV" value={num(Math.round(branch.atv), locale)} />
+              <Stat label="UPT" value={num(branch.upt, locale, 2)} />
+              <Stat label="H2/H1" value={percent(branch.h2vsH1, locale, 1, true)} />
+            </span>
+          </button>
+        ))}
+      </div>
+      <Panel className="hidden md:block">
         <TableWrap>
           <table className="w-full min-w-[980px] text-sm">
             <caption className="sr-only">{tx('أداء الفروع. العناوين قابلة للترتيب.', 'Branch performance. Headers can be sorted.')}</caption>

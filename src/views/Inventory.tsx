@@ -4,7 +4,7 @@ import { exportRows } from '../excel'
 import { money, num } from '../format'
 import { useStore } from '../store'
 import type { MoveStatus, Sku } from '../types'
-import { Button, Drawer, Modal, PageHeader, Panel, Pill, Select, TableWrap } from '../components/kit'
+import { Button, Drawer, Modal, PageHeader, Panel, Pill, Select, Stat, TableWrap } from '../components/kit'
 
 const STATUS: Record<MoveStatus, { ar: string; en: string; tone: 'good' | 'neutral' | 'bad' }> = {
   fast: { ar: 'سريع', en: 'Fast', tone: 'good' },
@@ -79,7 +79,26 @@ export default function InventoryView() {
         />
         <Button tone="gold" onClick={() => setPlan(true)}>{tx('خطة تسييل', 'Liquidation plan')}</Button>
       </div>
-      <Panel>
+      <div className="flex flex-col gap-2 md:hidden">
+        {rows.map((item) => (
+          <button key={item.code} type="button" onClick={() => setSku(item)} className="rounded-2xl bg-card p-3 text-start ring-1 ring-foreground/10">
+            <span className="flex items-start justify-between gap-2">
+              <span className="min-w-0">
+                <span className="block font-medium">{item.code}</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">{item.name}</span>
+              </span>
+              <Pill tone={STATUS[item.status].tone}>{tx(STATUS[item.status].ar, STATUS[item.status].en)}</Pill>
+            </span>
+            <span className="mt-3 grid grid-cols-2 gap-2">
+              <Stat label={tx('المخزون', 'On hand')} value={num(item.onHand, locale)} />
+              <Stat label={tx('مبيعات 30 يوم', '30-day sales')} value={num(item.sold30, locale)} />
+              <Stat label="DOI" value={item.doi == null ? '∞' : tx(`${item.doi} يوم`, `${item.doi} days`)} />
+              <Stat label={tx('مجمّد', 'Frozen')} value={item.frozen ? money(item.frozen, locale) : '—'} />
+            </span>
+          </button>
+        ))}
+      </div>
+      <Panel className="hidden md:block">
         <TableWrap>
           <table className="w-full min-w-[880px] text-sm">
             <thead className="text-muted-foreground"><tr><th className="px-2 py-2 text-start">SKU</th><th className="px-2 py-2 text-start">{tx('الحالة', 'Status')}</th><th className="px-2 py-2 text-start">{tx('المخزون', 'On hand')}</th><th className="px-2 py-2 text-start">{tx('مبيعات 30 يوم', '30-day sales')}</th><th className="px-2 py-2 text-start">DOI</th><th className="px-2 py-2 text-start">{tx('مجمّد', 'Frozen')}</th></tr></thead>

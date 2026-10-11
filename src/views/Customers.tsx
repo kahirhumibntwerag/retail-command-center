@@ -4,7 +4,7 @@ import { exportRows } from '../excel'
 import { money, num } from '../format'
 import { useStore } from '../store'
 import type { CustomerSegment } from '../types'
-import { Button, Drawer, Modal, PageHeader, Panel, Pill, Select, TableWrap, useSort } from '../components/kit'
+import { Button, Drawer, Modal, PageHeader, Panel, Pill, Select, Stat, TableWrap, useSort } from '../components/kit'
 
 const SEGMENTS: Record<CustomerSegment, { ar: string; en: string; tone: 'gold' | 'good' | 'warn' | 'bad' }> = {
   champion: { ar: 'بطل', en: 'Champion', tone: 'gold' },
@@ -93,7 +93,29 @@ export default function CustomersView() {
         <Button onClick={() => setCampaign('near')}>{tx('استعادة المعرضين', 'Win back at-risk')}</Button>
         <Button onClick={() => setCampaign('retired')}>{tx('تنشيط المتوقفين', 'Reactivate retired')}</Button>
       </div>
-      <Panel>
+      <div className="flex flex-col gap-2 md:hidden">
+        {shown.slice(0, 40).map((customer) => (
+          <article key={customer.id} className="rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-medium">{customer.name}</p>
+                <p className="num text-xs text-muted-foreground">{customer.phone}</p>
+              </div>
+              <Pill tone={SEGMENTS[customer.segment].tone}>{tx(SEGMENTS[customer.segment].ar, SEGMENTS[customer.segment].en)}</Pill>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Stat label={tx('آخر شراء', 'Last buy')} value={customer.last} />
+              <Stat label="LTV" value={money(customer.ltv, locale)} />
+              <Stat label="TRX" value={String(customer.invoices)} />
+              <Stat label={tx('منذ', 'Ago')} value={tx(`${customerAge(customer)} يوماً`, `${customerAge(customer)} days`)} />
+            </div>
+            <div className="mt-3">
+              <Button onClick={() => setId(customer.id)}>{tx('السجل', 'Ledger')}</Button>
+            </div>
+          </article>
+        ))}
+      </div>
+      <Panel className="hidden md:block">
         <TableWrap>
           <table className="w-full min-w-[860px] text-sm">
             <thead className="text-muted-foreground">
