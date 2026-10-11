@@ -93,7 +93,7 @@ export default function InventoryView() {
               <Stat label={tx('المخزون', 'On hand')} value={num(item.onHand, locale)} />
               <Stat label={tx('مبيعات 30 يوم', '30-day sales')} value={num(item.sold30, locale)} />
               <Stat label="DOI" value={item.doi == null ? '∞' : tx(`${item.doi} يوم`, `${item.doi} days`)} />
-              <Stat label={tx('مجمّد', 'Frozen')} value={item.frozen ? money(item.frozen, locale) : '—'} />
+              <Stat label={tx('مجمّد', 'Frozen')} value={item.frozen ? money(item.frozen, locale) : '—'} tone={item.frozen ? 'bad' : undefined} />
             </span>
           </button>
         ))}

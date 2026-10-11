@@ -44,7 +44,7 @@ export default function SellersView() {
       />
       <Panel>
         <h2 className="mb-1 text-lg font-semibold">{tx('مصفوفة التدريب', 'Coaching quadrants')}</h2>
-        <p className="mb-3 text-sm text-muted-foreground">{tx(`متوسط السلسلة: UPT ${num(model.kpis.upt, locale, 2)} · ATV ${money(model.kpis.atv, locale)}`, `Chain average: UPT ${num(model.kpis.upt, locale, 2)} · ATV ${money(model.kpis.atv, locale)}`)}</p>
+        <p className="mb-3 text-sm text-muted-foreground">{tx(`متوسط السلسلة: قطع الفاتورة ${num(model.kpis.upt, locale, 2)} · متوسط الفاتورة ${money(model.kpis.atv, locale)}`, `Chain average: units per receipt ${num(model.kpis.upt, locale, 2)} · average ticket ${money(model.kpis.atv, locale)}`)}</p>
         <p className="sr-only">{tx('مصفوفة: المحور الأفقي متوسط الفاتورة، والرأسي عدد القطع في الفاتورة. الخطوط هي متوسط السلسلة.', 'Scatter: horizontal is ticket, vertical is units per receipt. Lines mark the chain average.')}</p>
         <ChartContainer config={{ sellers: { label: tx('البائعون', 'Associates'), color: 'var(--chart-1)' } } satisfies ChartConfig} className="aspect-auto h-64 w-full sm:h-80">
           <ScatterChart margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -110,8 +110,8 @@ export default function SellersView() {
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2">
               <Stat label={tx('المبيعات', 'Sales')} value={money(seller.sales, locale)} />
-              <Stat label="UPT" value={num(seller.upt, locale, 2)} />
-              <Stat label="ATV" value={money(seller.atv, locale)} />
+              <Stat label={tx('قطع الفاتورة', 'Units per receipt')} value={num(seller.upt, locale, 2)} />
+              <Stat label={tx('متوسط الفاتورة', 'Average ticket')} value={money(seller.atv, locale)} />
             </div>
             <div className="mt-3">
               <Button onClick={() => setId(seller.id)}>{tx('توجيه', 'Coach')}</Button>
@@ -128,8 +128,8 @@ export default function SellersView() {
                 <SortTh label={tx('البائع', 'Associate')} column="name" active={key} dir={dir} onSort={toggle} />
                 <SortTh label={tx('المبيعات', 'Sales')} column="sales" active={key} dir={dir} onSort={toggle} />
                 <SortTh label="TRX" column="trx" active={key} dir={dir} onSort={toggle} />
-                <SortTh label="UPT" column="upt" active={key} dir={dir} onSort={toggle} />
-                <SortTh label="ATV" column="atv" active={key} dir={dir} onSort={toggle} />
+                <SortTh label={tx('قطع الفاتورة', 'Units per receipt')} column="upt" active={key} dir={dir} onSort={toggle} />
+                <SortTh label={tx('متوسط الفاتورة', 'Average ticket')} column="atv" active={key} dir={dir} onSort={toggle} />
                 <th className="px-2 py-2 text-start">{tx('التصنيف', 'Class')}</th>
                 <th />
               </tr>

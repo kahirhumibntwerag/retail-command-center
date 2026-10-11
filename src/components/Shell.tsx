@@ -6,7 +6,6 @@ import {
   Languages,
   LayoutDashboard,
   Menu,
-  RotateCcw,
   SlidersHorizontal,
   Search,
   Settings,
@@ -41,7 +40,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
 import { AdvisorSheet } from './AdvisorReport'
@@ -93,8 +91,6 @@ export default function Shell({ children }: { children: ReactNode }) {
   const [paletteIndex, setPaletteIndex] = useState(0)
   const [alertFilter, setAlertFilter] = useState<'all' | 'critical' | 'warning'>('all')
   const [uploadError, setUploadError] = useState('')
-  const [confirmReset, setConfirmReset] = useState(false)
-  const [advisorOpen, setAdvisorOpen] = useState(false)
   const { tx, locale, model, filters, settings } = store
   const current = NAV.flatMap((group) => group.items).find((item) => item.id === store.view)
   const criticalCount = model.alerts.filter((alert) => alert.severity === 'critical').length
@@ -167,20 +163,19 @@ export default function Shell({ children }: { children: ReactNode }) {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
         {tx('تخطَّ إلى المحتوى', 'Skip to content')}
       </a>
-      <AppSidebar onReset={() => setConfirmReset(true)} />
+      <AppSidebar />
       <SidebarInset className="min-w-0 bg-transparent">
-        <header className="sticky top-0 z-10 border-b border-border bg-background/80 px-3 py-2 shadow-sm backdrop-blur-md sm:px-4 sm:py-3">
+        <header className="sticky top-0 z-10 border-b border-border bg-background/80 px-3 py-2 shadow-sm backdrop-blur-md sm:px-4">
           <div className="flex items-center gap-2">
-            <SidebarTrigger className="size-11 shrink-0 border border-border bg-card md:hidden" aria-label={tx('القائمة', 'Menu')} />
             {current && <p className="min-w-0 flex-1 truncate text-sm font-semibold">{tx(current.ar, current.en)}</p>}
             <button
               type="button"
-              onClick={() => setAdvisorOpen(true)}
+              onClick={() => store.setAdvisorOpen(true)}
               className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg border border-primary/50 bg-primary/15 px-3 text-sm font-medium text-primary shadow-xs transition-colors hover:bg-primary/25"
               aria-label={tx('المستشار', 'Advisor')}
             >
               <Sparkles size={16} />
-              <span className="hidden md:inline">{tx('المستشار', 'Advisor')}</span>
+              <span className="hidden sm:inline">{tx('المستشار', 'Advisor')}</span>
             </button>
             <button
               type="button"
@@ -192,25 +187,27 @@ export default function Shell({ children }: { children: ReactNode }) {
               )}
             >
               <Bell size={16} />
-              <span className="hidden md:inline">{tx('التنبيهات', 'Alerts')}</span>
+              <span className="hidden sm:inline">{tx('التنبيهات', 'Alerts')}</span>
               <span className={cx('rounded-full px-1.5 text-xs font-semibold text-white', criticalCount ? 'bg-[#ff6b7d]' : 'bg-white/15 text-[#f7f4ee]')}>{model.alerts.length}</span>
             </button>
-            <button type="button" onClick={() => store.setUploadOpen(true)} className="hidden h-11 shrink-0 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/80 md:inline-flex" aria-label="Excel">
+            <button type="button" onClick={() => store.setUploadOpen(true)} className="hidden h-11 shrink-0 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/80 sm:inline-flex" aria-label="Excel">
               <Upload size={16} />
-              <span className="hidden md:inline">Excel</span>
+              <span>Excel</span>
             </button>
-            <button type="button" onClick={() => store.setLocale(locale === 'ar' ? 'en' : 'ar')} className="hidden h-11 shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-3 text-sm shadow-xs transition-colors hover:bg-accent md:inline-flex" aria-label={tx('التبديل إلى الإنجليزية', 'Switch to Arabic')}>
+            <button type="button" onClick={() => store.setLocale(locale === 'ar' ? 'en' : 'ar')} className="inline-flex h-11 shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-3 text-sm shadow-xs transition-colors hover:bg-accent" aria-label={tx('التبديل إلى الإنجليزية', 'Switch to Arabic')}>
               <Languages size={16} />{locale === 'ar' ? 'EN' : 'ع'}
             </button>
           </div>
-          <button type="button" onClick={() => store.setPaletteOpen(true)} className="mt-2 flex h-11 w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-3 text-start text-sm text-muted-foreground shadow-xs transition-colors hover:bg-accent">
+        </header>
+        <div className="border-b border-border px-3 py-2 sm:px-4">
+          <button type="button" onClick={() => store.setPaletteOpen(true)} className="flex h-11 w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-3 text-start text-sm text-muted-foreground shadow-xs transition-colors hover:bg-accent">
             <Search size={15} />
             <span className="truncate">{tx('ابحث عن فرع أو قسم', 'Search a store or section')}</span>
             <kbd className="ms-auto hidden rounded-md border border-border px-1.5 text-[11px] sm:inline">Ctrl K</kbd>
           </button>
           {store.view !== 'settings' && (
             <>
-              <div className="mt-2 flex items-center gap-2 md:hidden">
+              <div className="mt-2 flex items-center gap-2 sm:hidden">
                 <button type="button" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-border bg-card px-3 text-sm" onClick={() => setFiltersOpen(true)}>
                   <SlidersHorizontal size={16} />
                   {tx('الفلاتر', 'Filters')}
@@ -220,7 +217,7 @@ export default function Shell({ children }: { children: ReactNode }) {
                   {periodLabels[filters.period]} · {segmentName} · {branchName}
                 </p>
               </div>
-              <div className="mt-3 hidden md:block">
+              <div className="mt-3 hidden sm:block">
                 <div className="mb-2 flex items-center gap-2">
                   <Pill tone={datasetTone(store.dataset.source)}>{store.dataset.source === 'sample' ? tx('عينة أغسطس 2026', 'August 2026 sample') : store.dataset.sourceName}</Pill>
                   {!settings.includeDoha && <Pill>{tx('الدوحة مستبعدة من الإجمالي', 'Doha excluded from the total')}</Pill>}
@@ -230,7 +227,7 @@ export default function Shell({ children }: { children: ReactNode }) {
                 </div>
                 <ActiveChips />
               </div>
-              <div className="md:hidden">
+              <div className="sm:hidden">
                 <ActiveChips />
               </div>
               <HandleSheet open={filtersOpen} onOpenChange={setFiltersOpen} title={tx('الفلاتر', 'Filters')}>
@@ -249,13 +246,13 @@ export default function Shell({ children }: { children: ReactNode }) {
               </HandleSheet>
             </>
           )}
-        </header>
-        <div id="main" tabIndex={-1} className="min-w-0 px-3 py-4 pb-24 outline-none sm:px-6 md:py-5 md:pb-5">{children}</div>
+        </div>
+        <div id="main" tabIndex={-1} className="min-w-0 px-3 py-4 pb-24 outline-none sm:px-6 sm:py-5 sm:pb-5">{children}</div>
         <MobileTabBar />
       </SidebarInset>
 
       {store.toast && (
-        <div role="status" aria-live="polite" className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full bg-primary py-1 ps-4 pe-1 text-sm font-medium text-primary-foreground shadow-lg md:bottom-4">
+        <div role="status" aria-live="polite" className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full bg-primary py-1 ps-4 pe-1 text-sm font-medium text-primary-foreground shadow-lg sm:bottom-4">
           {store.toast}
           <button type="button" onClick={store.dismissToast} aria-label={tx('إخفاء الرسالة', 'Dismiss message')} className="grid h-9 w-9 place-items-center rounded-full hover:bg-black/10">
             <X size={16} />
@@ -263,7 +260,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <AdvisorSheet open={advisorOpen} onOpenChange={setAdvisorOpen} />
+      <AdvisorSheet open={store.advisorOpen} onOpenChange={store.setAdvisorOpen} />
 
       {store.alertsOpen && (
         <Drawer title={tx('التنبيهات', 'Alerts')} onClose={() => store.setAlertsOpen(false)}>
@@ -372,21 +369,11 @@ export default function Shell({ children }: { children: ReactNode }) {
         </Modal>
       )}
 
-      {confirmReset && (
-        <Modal title={tx('استعادة العينة', 'Restore sample')} onClose={() => setConfirmReset(false)}>
-          <h2 className="text-xl font-semibold">{tx('استعادة بيانات أغسطس؟', 'Restore the August sample?')}</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">{tx('هذا يستبدل الملف المرفوع ويعيد الفلاتر. الإعدادات المحفوظة تبقى.', 'This replaces the uploaded workbook and clears filters. Saved settings stay.')}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button tone="gold" onClick={() => { store.resetSample(); setConfirmReset(false); store.notify(tx('تمت استعادة عينة أغسطس', 'August sample restored')) }}>{tx('استعادة', 'Restore')}</Button>
-            <Button onClick={() => setConfirmReset(false)}>{tx('إلغاء', 'Cancel')}</Button>
-          </div>
-        </Modal>
-      )}
     </SidebarProvider>
   )
 }
 
-function AppSidebar({ onReset }: { onReset: () => void }) {
+function AppSidebar() {
   const store = useStore()
   const direction = useDirection()
   const { setOpenMobile } = useSidebar()
@@ -444,26 +431,16 @@ function AppSidebar({ onReset }: { onReset: () => void }) {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem className="md:hidden">
+          <SidebarMenuItem className="sm:hidden">
             <SidebarMenuButton size="lg" onClick={() => { store.setUploadOpen(true); setOpenMobile(false) }}>
               <Upload />
               <span>Excel</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem className="md:hidden">
+          <SidebarMenuItem className="sm:hidden">
             <SidebarMenuButton size="lg" onClick={() => store.setLocale(store.locale === 'ar' ? 'en' : 'ar')}>
               <Languages />
               <span>{store.locale === 'ar' ? 'English' : 'العربية'}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              tooltip={{ children: tx('بيانات أغسطس الافتراضية', 'August sample data'), side: tooltipSide }}
-              onClick={onReset}
-            >
-              <RotateCcw />
-              <span>{tx('بيانات أغسطس الافتراضية', 'August sample data')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -588,7 +565,7 @@ function MobileTabBar() {
   const items = PHONE_TABS.map((tab) => ({ ...tab, icon: NAV.flatMap((group) => group.items).find((item) => item.id === tab.id)!.icon }))
   const inTab = PHONE_TABS.some((tab) => tab.id === store.view)
   return (
-    <nav aria-label={tx('التنقل السريع', 'Primary navigation')} className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
+    <nav aria-label={tx('التنقل السريع', 'Primary navigation')} className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden">
       <div className="grid grid-cols-5">
         {items.map((item) => {
           const Icon = item.icon

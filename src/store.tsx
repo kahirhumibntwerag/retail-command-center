@@ -26,6 +26,8 @@ type Store = {
   setUploadOpen: (open: boolean) => void
   paletteOpen: boolean
   setPaletteOpen: (open: boolean) => void
+  advisorOpen: boolean
+  setAdvisorOpen: (open: boolean) => void
   toast: string | null
   notify: (message: string) => void
   dismissToast: () => void
@@ -64,6 +66,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [alertsOpen, setAlertsOpen] = useState(false)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [advisorOpen, setAdvisorOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
@@ -138,11 +141,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setUploadOpen,
     paletteOpen,
     setPaletteOpen,
+    advisorOpen,
+    setAdvisorOpen,
     toast,
     notify: setToast,
     dismissToast: () => setToast(null),
     tx: (ar, en) => (locale === 'ar' ? ar : en),
-  }), [locale, view, filters, settings, dataset, model, managerId, alertsOpen, uploadOpen, paletteOpen, toast])
+  }), [locale, view, filters, settings, dataset, model, managerId, alertsOpen, uploadOpen, paletteOpen, advisorOpen, toast])
 
   return (
     <Ctx.Provider value={value}>

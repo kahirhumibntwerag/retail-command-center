@@ -37,11 +37,10 @@ export default function BranchesView() {
             <span className="font-medium">{branch.name}</span>
             <span className="mt-0.5 block text-xs text-muted-foreground">{segmentLabel(branch.segment, locale)} · {branch.staff} {tx('بائعين', 'associates')}</span>
             <span className="num mt-2 block text-lg font-semibold">{money(branch.included ? branch.periodSalesEgp : branch.periodSales, locale, branch.included ? 'EGP' : branch.currency)}</span>
-            <span className="mt-2 grid grid-cols-2 gap-2">
-              <Stat label={tx('الحصة', 'Share')} value={branch.included ? percent(branch.share, locale) : tx('مستبعد', 'Excluded')} />
-              <Stat label="ATV" value={num(Math.round(branch.atv), locale)} />
-              <Stat label="UPT" value={num(branch.upt, locale, 2)} />
-              <Stat label="H2/H1" value={percent(branch.h2vsH1, locale, 1, true)} />
+            <span className="mt-2 grid grid-cols-3 gap-2">
+              <Stat label={tx('الهدف', 'Target')} value={percent(branch.target ? (branch.currency === 'QAR' ? branch.sales : branch.periodSalesEgp) / branch.target : 0, locale, 0)} tone={(branch.target ? (branch.currency === 'QAR' ? branch.sales : branch.periodSalesEgp) / branch.target : 0) >= 1 ? 'good' : (branch.target ? (branch.currency === 'QAR' ? branch.sales : branch.periodSalesEgp) / branch.target : 1) < 0.9 ? 'bad' : undefined} />
+              <Stat label={tx('غير منسوب', 'Unattributed')} value={percent(branch.unattributed, locale, 0)} tone={branch.unattributed >= 0.1 ? 'bad' : undefined} />
+              <Stat label={tx('أعلى 3', 'Top 3')} value={percent(branch.top3, locale, 0)} tone={branch.top3 > 0.7 ? 'warn' : undefined} />
             </span>
           </button>
         ))}
@@ -56,8 +55,8 @@ export default function BranchesView() {
                 <SortTh label={tx('المبيعات', 'Sales')} column="periodSalesEgp" active={key} dir={dir} onSort={toggle} />
                 <SortTh label={tx('الحصة', 'Share')} column="share" active={key} dir={dir} onSort={toggle} />
                 <SortTh label="TRX" column="periodTrx" active={key} dir={dir} onSort={toggle} />
-                <SortTh label="ATV" column="atv" active={key} dir={dir} onSort={toggle} />
-                <SortTh label="UPT" column="upt" active={key} dir={dir} onSort={toggle} />
+                <SortTh label={tx('متوسط الفاتورة', 'Average ticket')} column="atv" active={key} dir={dir} onSort={toggle} />
+                <SortTh label={tx('قطع الفاتورة', 'Units per receipt')} column="upt" active={key} dir={dir} onSort={toggle} />
                 <SortTh label="UTV" column="utv" active={key} dir={dir} onSort={toggle} />
                 <SortTh label="CV" column="cv" active={key} dir={dir} onSort={toggle} />
                 <SortTh label="H2/H1" column="h2vsH1" active={key} dir={dir} onSort={toggle} />
@@ -84,14 +83,14 @@ export default function BranchesView() {
                     <td className="num px-2 py-3">{num(branch.upt, locale, 2)}</td>
                     <td className="num px-2 py-3">{num(Math.round(branch.utv), locale)}</td>
                     <td className="num px-2 py-3">{num(branch.cv, locale, 3)}</td>
-                    <td className="num px-2 py-3">{percent(branch.h2vsH1, locale, 1, true)}</td>
+                    <td className={cx('num px-2 py-3', branch.h2vsH1 <= -0.15 && 'text-red-300', branch.h2vsH1 >= 0.05 && 'text-emerald-300')}>{percent(branch.h2vsH1, locale, 1, true)}</td>
                     <td className="px-2 py-3"><Pill tone={branch.top3 > 0.7 ? 'warn' : 'neutral'}>{percent(branch.top3, locale, 1)}</Pill></td>
                     <td className="px-2 py-3"><Pill tone={branch.unattributed >= 0.1 ? 'bad' : 'neutral'}>{percent(branch.unattributed, locale, 1)}</Pill></td>
                     <td className="px-2 py-3">
                       <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(achievement * 100)} aria-label={tx(`تحقيق الهدف ${percent(achievement, locale, 0)}`, `Target progress ${percent(achievement, locale, 0)}`)}>
                         <div className="h-full bg-primary" style={{ width: `${Math.min(100, achievement * 100)}%` }} />
                       </div>
-                      <span className="num text-xs text-muted-foreground">{percent(achievement, locale, 0)}</span>
+                      <span className={cx('num text-xs', achievement >= 1 ? 'text-emerald-300' : achievement < 0.9 ? 'text-red-300' : 'text-muted-foreground')}>{percent(achievement, locale, 0)}</span>
                     </td>
                   </tr>
                 )
@@ -106,10 +105,10 @@ export default function BranchesView() {
           <h2 className="text-2xl font-semibold">{open.name}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{segmentLabel(open.segment, locale)}</p>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <Mini label="ATV" value={money(open.atv, locale, open.currency)} />
-            <Mini label="UPT" value={num(open.upt, locale, 2)} />
-            <Mini label="UTV" value={money(open.utv, locale, open.currency)} />
-            <Mini label={tx('غير منسوب', 'Unattributed')} value={percent(open.unattributed, locale)} />
+            <Mini label={tx('متوسط الفاتورة', 'Average ticket')} value={money(open.atv, locale, open.currency)} />
+            <Mini label={tx('قطع الفاتورة', 'Units per receipt')} value={num(open.upt, locale, 2)} />
+            <Mini label={tx('سعر القطعة', 'Unit value')} value={money(open.utv, locale, open.currency)} />
+            <Mini label={tx('غير منسوب', 'Unattributed')} value={percent(open.unattributed, locale)} tone={open.unattributed >= 0.1 ? 'bad' : undefined} />
           </div>
           <ChartContainer config={{ sales: { label: tx('المبيعات', 'Sales'), color: 'var(--chart-1)' } } satisfies ChartConfig} className="mt-4 aspect-auto h-48 w-full">
             <AreaChart data={open.series.map((sales, i) => ({ day: i + 1, sales }))} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -127,6 +126,6 @@ export default function BranchesView() {
   )
 }
 
-function Mini({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-2xl bg-muted/60 p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="num mt-1">{value}</p></div>
+function Mini({ label, value, tone }: { label: string; value: string; tone?: 'bad' }) {
+  return <div className="rounded-2xl bg-muted/60 p-3"><p className="text-xs text-muted-foreground">{label}</p><p className={cx('num mt-1', tone === 'bad' && 'text-red-300')}>{value}</p></div>
 }

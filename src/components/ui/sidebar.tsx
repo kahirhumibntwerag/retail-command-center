@@ -194,7 +194,7 @@ function Sidebar({
       <div
         data-slot="sidebar"
         className={cn(
-          "hidden w-(--sidebar-width) shrink-0 flex-col bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:flex md:h-svh md:overflow-hidden",
+          "hidden w-(--sidebar-width) shrink-0 flex-col bg-sidebar text-sidebar-foreground sm:sticky sm:top-0 sm:flex sm:h-svh sm:overflow-hidden",
           className
         )}
         {...props}

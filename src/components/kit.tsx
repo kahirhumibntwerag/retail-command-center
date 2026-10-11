@@ -229,11 +229,13 @@ export function TableWrap({ children, className }: { children: ReactNode; classN
   return <div className={cx('max-w-full overflow-x-auto overscroll-x-contain', className)}>{children}</div>
 }
 
-export function Stat({ label, value }: { label: string; value: ReactNode }) {
+export function Stat({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: ReactNode; tone?: 'good' | 'bad' | 'warn' }) {
+  const color = tone === 'good' ? 'text-emerald-300' : tone === 'bad' ? 'text-red-300' : tone === 'warn' ? 'text-amber-200' : ''
   return (
     <div className="min-w-0">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="num mt-0.5 text-sm font-medium break-words">{value}</p>
+      <p className={cx('num mt-0.5 text-sm font-medium break-words', color)}>{value}</p>
+      {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
     </div>
   )
 }

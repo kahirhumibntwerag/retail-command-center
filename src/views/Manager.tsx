@@ -50,9 +50,9 @@ export default function ManagerView() {
       />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label={tx('صافي المبيعات', 'Net sales')} value={money(branch.sales, locale, branch.currency)} hint={`${tx('متوسط الشريحة', 'Segment average ticket')} ${money(peer.atv, locale, branch.currency)}`} />
-        <Stat label="UPT" value={num(branch.upt, locale, 2)} hint={`${tx('الشريحة', 'Segment')} ${num(peer.upt, locale, 2)}`} />
-        <Stat label="ATV" value={money(branch.atv, locale, branch.currency)} hint={`${tx('الشريحة', 'Segment')} ${money(peer.atv, locale, branch.currency)}`} />
-        <Stat label={tx('جودة البيانات', 'Data quality')} value={percent(quality, locale, 0)} hint={`${tx('غير منسوب', 'Unattributed')} ${percent(branch.unattributed, locale)}`} />
+        <Stat label={tx('قطع الفاتورة', 'Units per receipt')} value={num(branch.upt, locale, 2)} hint={`${tx('الشريحة', 'Segment')} ${num(peer.upt, locale, 2)}`} />
+        <Stat label={tx('متوسط الفاتورة', 'Average ticket')} value={money(branch.atv, locale, branch.currency)} hint={`${tx('الشريحة', 'Segment')} ${money(peer.atv, locale, branch.currency)}`} />
+        <Stat label={tx('جودة البيانات', 'Data quality')} value={percent(quality, locale, 0)} hint={`${tx('غير منسوب', 'Unattributed')} ${percent(branch.unattributed, locale)}`} tone={branch.unattributed >= 0.1 ? 'bad' : undefined} />
       </div>
 
       <Panel className="mt-4">
@@ -106,8 +106,8 @@ export default function ManagerView() {
   )
 }
 
-function Stat({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return <article className="rounded-xl bg-card p-4 text-card-foreground shadow-sm ring-1 ring-foreground/10"><p className="text-sm text-muted-foreground">{label}</p><p className="num mt-2 text-2xl">{value}</p><p className="mt-1 text-xs text-muted-foreground">{hint}</p></article>
+function Stat({ label, value, hint, tone }: { label: string; value: string; hint: string; tone?: 'bad' }) {
+  return <article className="rounded-xl bg-card p-4 text-card-foreground shadow-sm ring-1 ring-foreground/10"><p className="text-sm text-muted-foreground">{label}</p><p className={`num mt-2 text-2xl ${tone === 'bad' ? 'text-red-300' : ''}`}>{value}</p><p className="mt-1 text-xs text-muted-foreground">{hint}</p></article>
 }
 
 function Compare({ label, store, peer, delta, locale }: { label: string; store: string; peer: string; delta: number; locale: 'ar' | 'en' }) {
