@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Bar, CartesianGrid, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { exportRows } from '../excel'
 import { segmentLabel } from '../engine'
 import { money, num, percent } from '../format'
 import { useStore } from '../store'
 import type { Segment } from '../types'
-import { Button, chartTipStyle, cx, Drawer, PageHeader, Panel, Pill, SortTh, TableWrap, useSort } from '../components/kit'
+import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
+import { MoneyTooltip, chartAxis } from '../components/charts'
+import { Button, cx, Drawer, PageHeader, Panel, Pill, SortTh, TableWrap, useSort } from '../components/kit'
 
 export default function BranchesView() {
   const { model, locale, tx, setView, setManagerId, setFilters, filters } = useStore()
@@ -94,17 +96,15 @@ export default function BranchesView() {
             <Mini label="UTV" value={money(open.utv, locale, open.currency)} />
             <Mini label={tx('غير منسوب', 'Unattributed')} value={percent(open.unattributed, locale)} />
           </div>
-          <div className="mt-4 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={open.series.map((sales, i) => ({ day: i + 1, sales }))}>
-                <CartesianGrid stroke="rgba(255,255,255,.06)" vertical={false} />
-                <XAxis dataKey="day" stroke="#93a0b8" fontSize={11} />
-                <YAxis stroke="#93a0b8" fontSize={11} />
-                <Tooltip formatter={(value) => money(Number(value), locale, open.currency)} contentStyle={chartTipStyle()} />
-                <Bar dataKey="sales" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartContainer config={{ sales: { label: tx('المبيعات', 'Sales'), color: 'var(--chart-1)' } } satisfies ChartConfig} className="mt-4 aspect-auto h-48 w-full">
+            <AreaChart data={open.series.map((sales, i) => ({ day: i + 1, sales }))} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="day" {...chartAxis} />
+              <YAxis {...chartAxis} width={40} />
+              <MoneyTooltip locale={locale} currency={open.currency} />
+              <Area type="monotone" dataKey="sales" stroke="var(--color-sales)" fill="var(--color-sales)" fillOpacity={0.2} strokeWidth={2} />
+            </AreaChart>
+          </ChartContainer>
           <Button tone="gold" onClick={() => { setManagerId(open.id); setView('manager'); setOpenId(null) }}>{tx('رؤية مدير الفرع', 'Open store manager')}</Button>
         </Drawer>
       )}

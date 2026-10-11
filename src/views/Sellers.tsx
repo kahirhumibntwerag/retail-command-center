@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Scatter, ScatterChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ZAxis, CartesianGrid, ReferenceLine } from 'recharts'
+import { CartesianGrid, ReferenceLine, Scatter, ScatterChart, XAxis, YAxis, ZAxis } from 'recharts'
 import { exportRows } from '../excel'
 import type { CoachKind } from '../types'
-import { money, num } from '../format'
+import { compact, money, num } from '../format'
 import { useStore } from '../store'
 import { Input } from '@/components/ui/input'
-import { Button, chartTipStyle, Drawer, PageHeader, Panel, Pill, Select, SortTh, TableWrap, useSort } from '../components/kit'
+import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart'
+import { TipRow, chartAxis } from '../components/charts'
+import { Button, Drawer, PageHeader, Panel, Pill, Select, SortTh, TableWrap, useSort } from '../components/kit'
 
 const COACH: Record<CoachKind, { ar: string; en: string; tone: 'good' | 'warn' | 'bad' | 'gold' | 'neutral'; tipAr: string; tipEn: string }> = {
   star: { ar: 'نجم مبيعات', en: 'Star', tone: 'good', tipAr: 'اطلب منه تدريب زميل هذا الأسبوع، ولا تنقله من العملاء.', tipEn: 'Ask them to coach one peer this week. Do not pull them off customers.' },
@@ -44,20 +46,32 @@ export default function SellersView() {
         <h2 className="mb-1 text-lg font-semibold">{tx('مصفوفة التدريب', 'Coaching quadrants')}</h2>
         <p className="mb-3 text-sm text-muted-foreground">{tx(`متوسط السلسلة: UPT ${num(model.kpis.upt, locale, 2)} · ATV ${money(model.kpis.atv, locale)}`, `Chain average: UPT ${num(model.kpis.upt, locale, 2)} · ATV ${money(model.kpis.atv, locale)}`)}</p>
         <p className="sr-only">{tx('مصفوفة: المحور الأفقي متوسط الفاتورة، والرأسي عدد القطع في الفاتورة. الخطوط هي متوسط السلسلة.', 'Scatter: horizontal is ticket, vertical is units per receipt. Lines mark the chain average.')}</p>
-        <div className="h-80" aria-hidden="true">
-          <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart>
-              <CartesianGrid stroke="rgba(255,255,255,.06)" />
-              <XAxis dataKey="atv" name="ATV" stroke="#93a0b8" type="number" />
-              <YAxis dataKey="upt" name="UPT" stroke="#93a0b8" type="number" />
-              <ZAxis dataKey="sales" range={[40, 220]} />
-              <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={chartTipStyle()} />
-              <ReferenceLine x={model.kpis.atv} stroke="var(--primary)" />
-              <ReferenceLine y={model.kpis.upt} stroke="#7eb6ff" />
-              <Scatter data={scatter} fill="var(--primary)" />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
+        <ChartContainer config={{ sellers: { label: tx('البائعون', 'Associates'), color: 'var(--chart-1)' } } satisfies ChartConfig} className="aspect-auto h-64 w-full sm:h-80">
+          <ScatterChart margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid />
+            <XAxis dataKey="atv" name="ATV" type="number" {...chartAxis} tickFormatter={(value) => compact(Number(value), locale)} />
+            <YAxis dataKey="upt" name="UPT" type="number" {...chartAxis} width={36} />
+            <ZAxis dataKey="sales" range={[48, 240]} />
+            <ChartTooltip
+              cursor={{ strokeDasharray: '3 3' }}
+              content={({ active, payload }) => {
+                const row = payload?.[0]?.payload as { name?: string; atv?: number; upt?: number; sales?: number } | undefined
+                if (!active || !row) return null
+                return (
+                  <div className="grid min-w-36 gap-1 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
+                    <p className="font-medium">{row.name}</p>
+                    <TipRow label="ATV" value={money(row.atv ?? 0, locale)} />
+                    <TipRow label="UPT" value={num(row.upt ?? 0, locale, 2)} />
+                    <TipRow label={tx('المبيعات', 'Sales')} value={money(row.sales ?? 0, locale)} />
+                  </div>
+                )
+              }}
+            />
+            <ReferenceLine x={model.kpis.atv} stroke="var(--chart-1)" strokeDasharray="4 4" />
+            <ReferenceLine y={model.kpis.upt} stroke="var(--chart-2)" strokeDasharray="4 4" />
+            <Scatter data={scatter} fill="var(--chart-1)" />
+          </ScatterChart>
+        </ChartContainer>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           <Note title={tx('نجوم', 'Stars')} body={tx('UPT و ATV فوق السلسلة', 'UPT and ATV above the chain')} />
           <Note title={tx('تدريب سلة', 'UPT coaching')} body={tx('فاتورة قوية وقطع قليلة', 'Strong ticket, thin basket')} />
@@ -67,19 +81,19 @@ export default function SellersView() {
       </Panel>
 
       <div className="my-4 flex flex-wrap gap-2">
-        <Input value={q} onChange={(e) => setQ(e.target.value)} aria-label={tx('ابحث بالاسم', 'Search by name')} placeholder={tx('ابحث بالاسم', 'Search by name')} className="h-10 w-56" />
+        <Input value={q} onChange={(e) => setQ(e.target.value)} aria-label={tx('ابحث بالاسم', 'Search by name')} placeholder={tx('ابحث بالاسم', 'Search by name')} className="h-11 w-full sm:h-10 sm:w-56" />
         <Select
           ariaLabel={tx('فرع', 'Branch')}
           value={branch}
           onValueChange={setBranch}
-          className="w-52"
+          className="w-full sm:w-52"
           options={[{ value: 'all', label: tx('كل الفروع', 'All stores') }, ...dataset.branches.map((b) => ({ value: b.id, label: b.name }))]}
         />
         <Select
           ariaLabel={tx('التصنيف', 'Classification')}
           value={only}
           onValueChange={(value) => setOnly(value as CoachKind | 'all')}
-          className="w-52"
+          className="w-full sm:w-52"
           options={[{ value: 'all', label: tx('كل التصنيفات', 'All classifications') }, ...(Object.keys(COACH) as CoachKind[]).map((key) => ({ value: key, label: tx(COACH[key].ar, COACH[key].en) }))]}
         />
       </div>

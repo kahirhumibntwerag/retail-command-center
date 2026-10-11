@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts'
 import { exportRows } from '../excel'
 import { num, percent } from '../format'
 import { useStore } from '../store'
-import { Button, chartTipStyle, PageHeader, Panel, Pill, Seg, TableWrap } from '../components/kit'
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
+import { TipRow, chartAxis } from '../components/charts'
+import { Button, PageHeader, Panel, Pill, Seg, TableWrap } from '../components/kit'
 
 type Tab = 'pareto' | 'allocation' | 'dcs' | 'dead'
 
@@ -38,19 +40,32 @@ export default function AssortmentView() {
 
       {tab === 'pareto' && (
         <Panel className="mt-4">
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chart}>
-                <CartesianGrid stroke="rgba(255,255,255,.06)" vertical={false} />
-                <XAxis dataKey="code" stroke="#93a0b8" fontSize={11} interval={0} angle={-35} height={60} textAnchor="end" />
-                <YAxis yAxisId="u" stroke="#93a0b8" fontSize={12} />
-                <YAxis yAxisId="c" orientation="right" stroke="var(--primary)" fontSize={12} unit="%" />
-                <Tooltip contentStyle={chartTipStyle()} />
-                <Bar yAxisId="u" dataKey="units" fill="#35527a" radius={[6, 6, 0, 0]} />
-                <Line yAxisId="c" dataKey="cumulative" stroke="var(--primary)" strokeWidth={2} dot={false} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartContainer
+            config={{
+              units: { label: tx('القطع', 'Units'), color: 'var(--chart-2)' },
+              cumulative: { label: tx('تراكمي', 'Cumulative'), color: 'var(--chart-1)' },
+            } satisfies ChartConfig}
+            className="aspect-auto h-64 w-full sm:h-72"
+          >
+            <ComposedChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="code" {...chartAxis} interval={0} angle={-35} height={64} textAnchor="end" />
+              <YAxis yAxisId="u" {...chartAxis} width={36} />
+              <YAxis yAxisId="c" orientation="right" {...chartAxis} width={40} unit="%" />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    formatter={(value, name) => (
+                      <TipRow label={String(name ?? '')} value={name === 'cumulative' || name === tx('تراكمي', 'Cumulative') ? `${value}%` : num(Number(value), locale)} />
+                    )}
+                  />
+                }
+              />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar yAxisId="u" dataKey="units" fill="var(--color-units)" radius={[6, 6, 0, 0]} />
+              <Line yAxisId="c" dataKey="cumulative" stroke="var(--color-cumulative)" strokeWidth={2.5} dot={false} />
+            </ComposedChart>
+          </ChartContainer>
           <TableWrap>
             <table className="mt-4 w-full min-w-[640px] text-sm">
               <thead className="text-muted-foreground"><tr><th className="px-2 py-2 text-start">#</th><th className="px-2 py-2 text-start">{tx('الكود', 'Code')}</th><th className="px-2 py-2 text-start">{tx('الوصف', 'Description')}</th><th className="px-2 py-2 text-start">{tx('القطع', 'Units')}</th><th className="px-2 py-2 text-start">{tx('تراكمي', 'Cumulative')}</th><th className="px-2 py-2 text-start">{tx('الشريحة', 'Tier')}</th></tr></thead>

@@ -68,7 +68,7 @@ export default function SettingsView() {
                   <Select
                     ariaLabel={branch.name}
                     value={segment}
-                    className="w-44"
+                    className="w-full sm:w-44"
                     onValueChange={(value) => setSettings({ segmentOverrides: { ...settings.segmentOverrides, [branch.id]: value as Segment } })}
                     options={(['Mall', 'Governorate', 'Outlet', 'Online', 'International'] as Segment[]).map((item) => ({ value: item, label: segmentLabel(item, locale) }))}
                   />
@@ -83,7 +83,7 @@ export default function SettingsView() {
         <Panel className="mt-4">
           <p className="mb-3 text-sm text-muted-foreground">{tx('هذه الحسابات تبقى في مبيعات الفرع وتخرج من ترتيب البائعين.', 'These accounts stay in store sales and leave the associate ranking.')}</p>
           <form className="mb-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (!account.trim()) return; setSettings({ excludedCashiers: [...settings.excludedCashiers, account.trim().toUpperCase()] }); setAccount('') }}>
-            <Input value={account} onChange={(e) => setAccount(e.target.value)} placeholder="ACCOUNTING" aria-label={tx('حساب كاشير', 'Cashier account')} className="h-10 w-56" />
+            <Input value={account} onChange={(e) => setAccount(e.target.value)} placeholder="ACCOUNTING" aria-label={tx('حساب كاشير', 'Cashier account')} className="h-11 w-full sm:h-10 sm:w-56" />
             <Button type="submit" tone="gold">{tx('إضافة', 'Add')}</Button>
           </form>
           <div className="flex flex-wrap gap-2">
@@ -103,7 +103,7 @@ export default function SettingsView() {
               ariaLabel={tx('الفرع', 'Store')}
               value={targetBranch}
               onValueChange={setTargetBranch}
-              className="w-52"
+              className="w-full sm:w-52"
               options={dataset.branches.map((b) => ({ value: b.id, label: b.name }))}
             />
             <Input aria-label={tx('المستهدف', 'Target')} value={targetValue} onChange={(e) => setTargetValue(e.target.value)} className="h-10 w-40" />

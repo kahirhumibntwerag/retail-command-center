@@ -26,6 +26,7 @@ import { useStore } from '../store'
 import type { ViewId } from '../types'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { AdvisorSheet } from './AdvisorReport'
 import { Button, Drawer, Modal, Pill, Select, cx } from './kit'
 
 const NAV: { groupAr: string; groupEn: string; items: { id: ViewId; ar: string; en: string; icon: typeof Store }[] }[] = [
@@ -75,6 +76,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   const [alertFilter, setAlertFilter] = useState<'all' | 'critical' | 'warning'>('all')
   const [uploadError, setUploadError] = useState('')
   const [confirmReset, setConfirmReset] = useState(false)
+  const [advisorOpen, setAdvisorOpen] = useState(false)
   const { tx, locale, model, filters, settings } = store
   const current = NAV.flatMap((group) => group.items).find((item) => item.id === store.view)
   const criticalCount = model.alerts.filter((alert) => alert.severity === 'critical').length
@@ -205,53 +207,69 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       {navOpen && <button type="button" aria-label={tx('إغلاق القائمة', 'Close menu')} className="fixed inset-0 z-20 bg-black/50 lg:hidden" onClick={() => setNavOpen(false)} />}
 
-      <div className="lg:ps-[272px]">
-        <header className="sticky top-0 z-10 border-b border-border bg-background/80 px-4 py-3 shadow-sm backdrop-blur-md">
-          <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className="grid h-10 w-10 place-items-center rounded-lg border border-border bg-card lg:hidden" onClick={() => setNavOpen(true)} aria-label={tx('فتح القائمة', 'Open menu')}>
+      <div className="min-w-0 lg:ps-[272px]">
+        <header className="sticky top-0 z-10 border-b border-border bg-background/80 px-3 py-2 shadow-sm backdrop-blur-md sm:px-4 sm:py-3">
+          <div className="flex items-center gap-2">
+            <button type="button" className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-border bg-card lg:hidden" onClick={() => setNavOpen(true)} aria-label={tx('فتح القائمة', 'Open menu')}>
               <Menu size={18} />
             </button>
-            {current && <p className="hidden text-sm font-semibold sm:block">{tx(current.ar, current.en)}</p>}
-            <button type="button" onClick={() => store.setPaletteOpen(true)} className="flex h-10 min-w-[180px] flex-1 items-center gap-2 rounded-lg border border-border bg-card px-3 text-start text-sm text-muted-foreground shadow-xs transition-colors hover:bg-accent">
-              <Search size={15} />
-              <span className="truncate">{tx('ابحث عن فرع أو قسم', 'Search a store or section')}</span>
-              <kbd className="ms-auto hidden rounded-md border border-border px-1.5 text-[11px] sm:inline">Ctrl K</kbd>
+            {current && <p className="min-w-0 flex-1 truncate text-sm font-semibold">{tx(current.ar, current.en)}</p>}
+            <button
+              type="button"
+              onClick={() => setAdvisorOpen(true)}
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg border border-primary/50 bg-primary/15 px-3 text-sm font-medium text-primary shadow-xs transition-colors hover:bg-primary/25"
+              aria-label={tx('المستشار', 'Advisor')}
+            >
+              <Sparkles size={16} />
+              <span className="hidden md:inline">{tx('المستشار', 'Advisor')}</span>
             </button>
             <button
               type="button"
               onClick={() => store.setAlertsOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm shadow-xs transition-colors hover:bg-accent"
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm shadow-xs transition-colors hover:bg-accent"
               aria-label={tx(
                 `${model.alerts.length} تنبيهاً، منها ${criticalCount} حرج`,
                 `${model.alerts.length} alerts, ${criticalCount} critical`,
               )}
             >
-              <Bell size={15} />
-              <span className="hidden sm:inline">{tx('التنبيهات', 'Alerts')}</span>
+              <Bell size={16} />
+              <span className="hidden md:inline">{tx('التنبيهات', 'Alerts')}</span>
               <span className={cx('rounded-full px-1.5 text-xs font-semibold text-white', criticalCount ? 'bg-[#ff6b7d]' : 'bg-white/15 text-[#f7f4ee]')}>{model.alerts.length}</span>
             </button>
-            <button type="button" onClick={() => store.setUploadOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/80">
-              <Upload size={15} />Excel
+            <button type="button" onClick={() => store.setUploadOpen(true)} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/80" aria-label="Excel">
+              <Upload size={16} />
+              <span className="hidden md:inline">Excel</span>
             </button>
-            <button type="button" onClick={() => store.setLocale(locale === 'ar' ? 'en' : 'ar')} className="inline-flex h-10 items-center gap-1 rounded-lg border border-border bg-card px-3 text-sm shadow-xs transition-colors hover:bg-accent" aria-label={tx('التبديل إلى الإنجليزية', 'Switch to Arabic')}>
-              <Languages size={15} />{locale === 'ar' ? 'EN' : 'ع'}
+            <button type="button" onClick={() => store.setLocale(locale === 'ar' ? 'en' : 'ar')} className="inline-flex h-11 shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-3 text-sm shadow-xs transition-colors hover:bg-accent" aria-label={tx('التبديل إلى الإنجليزية', 'Switch to Arabic')}>
+              <Languages size={16} />{locale === 'ar' ? 'EN' : 'ع'}
             </button>
           </div>
+          <button type="button" onClick={() => store.setPaletteOpen(true)} className="mt-2 flex h-11 w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-3 text-start text-sm text-muted-foreground shadow-xs transition-colors hover:bg-accent">
+            <Search size={15} />
+            <span className="truncate">{tx('ابحث عن فرع أو قسم', 'Search a store or section')}</span>
+            <kbd className="ms-auto hidden rounded-md border border-border px-1.5 text-[11px] sm:inline">Ctrl K</kbd>
+          </button>
           {store.view !== 'settings' && (
             <div className="mt-3">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <button type="button" className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-border px-3 py-1 text-sm lg:hidden" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)}>
+              <div className="mb-2 flex items-center gap-2 overflow-x-auto">
+                <button type="button" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-border px-3 text-sm lg:hidden" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)}>
                   {tx('الفلاتر', 'Filters')}
                   {activeCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{activeCount}</span>}
                 </button>
-                <p className="text-xs text-muted-foreground lg:sr-only">
+                <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground lg:sr-only">
                   {periodLabels[filters.period]} · {segmentName} · {branchName} · {deptLabels[filters.dept]}
                 </p>
-                <Pill tone={datasetTone(store.dataset.source)}>{store.dataset.source === 'sample' ? tx('عينة أغسطس 2026', 'August 2026 sample') : store.dataset.sourceName}</Pill>
-                {!settings.includeDoha && <Pill>{tx('الدوحة مستبعدة من الإجمالي', 'Doha excluded from the total')}</Pill>}
+                <span className="hidden shrink-0 sm:contents">
+                  <Pill tone={datasetTone(store.dataset.source)}>{store.dataset.source === 'sample' ? tx('عينة أغسطس 2026', 'August 2026 sample') : store.dataset.sourceName}</Pill>
+                  {!settings.includeDoha && <Pill>{tx('الدوحة مستبعدة من الإجمالي', 'Doha excluded from the total')}</Pill>}
+                </span>
               </div>
               <div className={cx('flex-wrap items-end gap-2', filtersOpen ? 'flex' : 'hidden', 'lg:flex')}>
-                <div className="flex min-w-[180px] flex-1 flex-col gap-1">
+                <div className="flex w-full flex-wrap gap-2 sm:hidden">
+                  <Pill tone={datasetTone(store.dataset.source)}>{store.dataset.source === 'sample' ? tx('عينة أغسطس 2026', 'August 2026 sample') : store.dataset.sourceName}</Pill>
+                  {!settings.includeDoha && <Pill>{tx('الدوحة مستبعدة من الإجمالي', 'Doha excluded from the total')}</Pill>}
+                </div>
+                <div className="flex w-full min-w-0 flex-col gap-1 sm:min-w-[180px] sm:flex-1">
                   <Label className="text-[11px] text-muted-foreground">{tx('الفترة', 'Period')}</Label>
                   <Select
                     ariaLabel={tx('الفترة', 'Period')}
@@ -265,7 +283,7 @@ export default function Shell({ children }: { children: ReactNode }) {
                     ]}
                   />
                 </div>
-                <div className="flex min-w-[180px] flex-1 flex-col gap-1">
+                <div className="flex w-full min-w-0 flex-col gap-1 sm:min-w-[180px] sm:flex-1">
                   <Label className="text-[11px] text-muted-foreground">{tx('الشريحة', 'Segment')}</Label>
                   <Select
                     ariaLabel={tx('الشريحة', 'Segment')}
@@ -277,7 +295,7 @@ export default function Shell({ children }: { children: ReactNode }) {
                     ]}
                   />
                 </div>
-                <div className="flex min-w-[180px] flex-1 flex-col gap-1">
+                <div className="flex w-full min-w-0 flex-col gap-1 sm:min-w-[180px] sm:flex-1">
                   <Label className="text-[11px] text-muted-foreground">{tx('الفرع', 'Branch')}</Label>
                   <Select
                     ariaLabel={tx('الفرع', 'Branch')}
@@ -289,7 +307,7 @@ export default function Shell({ children }: { children: ReactNode }) {
                     ]}
                   />
                 </div>
-                <div className="flex min-w-[180px] flex-1 flex-col gap-1">
+                <div className="flex w-full min-w-0 flex-col gap-1 sm:min-w-[180px] sm:flex-1">
                   <Label className="text-[11px] text-muted-foreground">{tx('القسم', 'Department')}</Label>
                   <Select
                     ariaLabel={tx('القسم', 'Department')}
@@ -311,7 +329,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             </div>
           )}
         </header>
-        <main id="main" tabIndex={-1} className="px-4 py-5 outline-none sm:px-6">{children}</main>
+        <main id="main" tabIndex={-1} className="min-w-0 px-3 py-4 outline-none sm:px-6 sm:py-5">{children}</main>
       </div>
 
       {store.toast && (
@@ -322,6 +340,8 @@ export default function Shell({ children }: { children: ReactNode }) {
           </button>
         </div>
       )}
+
+      <AdvisorSheet open={advisorOpen} onOpenChange={setAdvisorOpen} />
 
       {store.alertsOpen && (
         <Drawer title={tx('التنبيهات', 'Alerts')} onClose={() => store.setAlertsOpen(false)}>

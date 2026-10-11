@@ -74,14 +74,14 @@ export default function CustomersView() {
           ariaLabel={tx('الشريحة', 'Segment')}
           value={segment}
           onValueChange={(value) => setSegment(value as CustomerSegment | 'all')}
-          className="w-44"
+          className="w-full sm:w-44"
           options={[{ value: 'all', label: tx('الكل', 'All') }, ...(Object.keys(SEGMENTS) as CustomerSegment[]).map((key) => ({ value: key, label: tx(SEGMENTS[key].ar, SEGMENTS[key].en) }))]}
         />
         <Select
           ariaLabel={tx('الترتيب', 'Sort')}
           value={sortKey}
           onValueChange={(value) => setSortKey(value as typeof sortKey)}
-          className="w-48"
+          className="w-full sm:w-48"
           options={[
             { value: 'ltv', label: tx('الأعلى إنفاقاً', 'Highest spend') },
             { value: 'invoices', label: tx('الأكثر فواتير', 'Most receipts') },

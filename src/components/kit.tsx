@@ -64,13 +64,13 @@ export function PageHeader({
   actions?: ReactNode
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
       <div className="max-w-3xl">
         {eyebrow && <p className="mb-1 text-xs font-medium tracking-[0.16em] text-primary uppercase">{eyebrow}</p>}
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">{subtitle}</p>
+        <h1 className="text-xl font-semibold sm:text-3xl">{title}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {actions && <div className="flex w-full flex-wrap gap-2 sm:w-auto">{actions}</div>}
     </div>
   )
 }
@@ -95,7 +95,7 @@ export function Kpi({
   return (
     <Card className={cx('px-4 shadow-sm xl:col-span-2', emphasis && 'bg-[linear-gradient(160deg,color-mix(in_oklch,var(--primary)_24%,var(--card))_0%,var(--card)_58%)] ring-primary/40 sm:col-span-2')}>
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className={cx('num mt-2 font-semibold tracking-tight', emphasis ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl', tone === 'good' && 'text-emerald-300', tone === 'bad' && 'text-red-300', tone === 'gold' && 'text-primary')}>{value}</p>
+      <p className={cx('num mt-2 font-semibold break-words', emphasis ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl', tone === 'good' && 'text-emerald-300', tone === 'bad' && 'text-red-300', tone === 'gold' && 'text-primary')}>{value}</p>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">{hint}</p>
     </Card>
   )
@@ -161,7 +161,7 @@ export function Seg<T extends string>({
   onChange: (id: T) => void
 }) {
   return (
-    <div className="flex flex-wrap gap-1 rounded-xl bg-muted p-1">
+    <div className="flex w-full max-w-full flex-wrap gap-1 rounded-xl bg-muted p-1 sm:w-auto">
       {options.map((option) => (
         <UiButton
           key={option.id}
@@ -193,7 +193,7 @@ export function Select({
 }) {
   return (
     <ShadSelect value={value} onValueChange={onValueChange}>
-      <SelectTrigger aria-label={ariaLabel} className={cx('h-10 w-full min-w-[10rem]', className)}>
+      <SelectTrigger aria-label={ariaLabel} className={cx('h-11 w-full min-w-0 sm:h-10 sm:min-w-[10rem]', className)}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent position="popper" className="max-h-72">
@@ -226,7 +226,7 @@ export function Button({
 }
 
 export function TableWrap({ children }: { children: ReactNode }) {
-  return <div className="overflow-x-auto">{children}</div>
+  return <div className="max-w-full overflow-x-auto overscroll-x-contain">{children}</div>
 }
 
 export function useSort<T>(rows: T[], initial: keyof T, direction: 'asc' | 'desc' = 'desc') {
@@ -250,13 +250,4 @@ export function useSort<T>(rows: T[], initial: keyof T, direction: 'asc' | 'desc
     }
   }
   return { sorted, toggle, key, dir }
-}
-
-export function chartTipStyle() {
-  return {
-    background: 'var(--popover)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    color: 'var(--popover-foreground)',
-  }
 }

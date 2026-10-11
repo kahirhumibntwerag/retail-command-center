@@ -1,9 +1,11 @@
 import { useMemo } from 'react'
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { segmentLabel } from '../engine'
 import { money, num, percent } from '../format'
 import { useStore } from '../store'
-import { chartTipStyle, PageHeader, Panel, Pill, Select } from '../components/kit'
+import { ChartContainer, ChartLegend, ChartLegendContent, type ChartConfig } from '@/components/ui/chart'
+import { chartAxis } from '../components/charts'
+import { PageHeader, Panel, Pill, Select } from '../components/kit'
 
 export default function ManagerView() {
   const { dataset, settings, managerId, setManagerId, locale, tx } = useStore()
@@ -41,7 +43,7 @@ export default function ManagerView() {
             ariaLabel={tx('اختر الفرع', 'Choose a store')}
             value={branch.id}
             onValueChange={setManagerId}
-            className="w-52"
+            className="w-full sm:w-52"
             options={branches.map((item) => ({ value: item.id, label: item.name }))}
           />
         }
@@ -57,19 +59,22 @@ export default function ManagerView() {
         <h2 className="text-lg font-semibold">{tx(`مقابل شريحة ${segmentLabel(branch.segment, locale)}`, `Versus ${segmentLabel(branch.segment, locale)}`)}</h2>
         <p className="mb-3 text-sm text-muted-foreground">{tx('ATV و UTV مقسومان على 100 ليظهرا مع UPT على محور واحد. الجدول بجانب الرسم هو الرقم الحقيقي.', 'ATV and UTV are divided by 100 so they share an axis with UPT. The table beside the chart is the real number.')}</p>
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chart}>
-                <CartesianGrid stroke="rgba(255,255,255,.06)" vertical={false} />
-                <XAxis dataKey="metric" stroke="#93a0b8" fontSize={12} />
-                <YAxis stroke="#93a0b8" fontSize={12} />
-                <Tooltip contentStyle={chartTipStyle()} />
-                <Legend />
-                <Bar dataKey="store" name={branch.name} fill="var(--primary)" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="peer" name={tx('متوسط الشريحة', 'Segment')} fill="#35527a" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartContainer
+            config={{
+              store: { label: branch.name, color: 'var(--chart-1)' },
+              peer: { label: tx('متوسط الشريحة', 'Segment'), color: 'var(--chart-2)' },
+            } satisfies ChartConfig}
+            className="aspect-auto h-56 w-full sm:h-64"
+          >
+            <BarChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="metric" {...chartAxis} />
+              <YAxis {...chartAxis} width={36} />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar dataKey="store" fill="var(--color-store)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="peer" fill="var(--color-peer)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
           <ul className="space-y-3 text-sm">
             <Compare label="UPT" store={num(branch.upt, locale, 2)} peer={num(peer.upt, locale, 2)} delta={peer.upt ? branch.upt / peer.upt - 1 : 0} locale={locale} />
             <Compare label="ATV" store={money(branch.atv, locale, branch.currency)} peer={money(peer.atv, locale, branch.currency)} delta={peer.atv ? branch.atv / peer.atv - 1 : 0} locale={locale} />

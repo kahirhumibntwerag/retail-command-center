@@ -69,7 +69,7 @@ export default function InventoryView() {
           ariaLabel={tx('الترتيب', 'Sort')}
           value={sort}
           onValueChange={(value) => setSort(value as typeof sort)}
-          className="w-48"
+          className="w-full sm:w-48"
           options={[
             { value: 'frozen', label: tx('الأعلى تجميداً', 'Most frozen') },
             { value: 'sold', label: tx('الأسرع مبيعاً', 'Fastest selling') },
