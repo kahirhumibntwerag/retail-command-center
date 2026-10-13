@@ -3,7 +3,7 @@ import { money } from '../format'
 import { useStore } from '../store'
 import type { Competitor, Threat } from '../types'
 import { Input } from '@/components/ui/input'
-import { Button, Modal, PageHeader, Panel, Pill, Select } from '../components/kit'
+import { Button, cx, Kpi, Modal, PageHeader, Panel, Pill, Select, toneAccent } from '../components/kit'
 
 export default function CompetitorsView() {
   const { dataset, setDataset, locale, tx, model, notify } = useStore()
@@ -46,11 +46,18 @@ export default function CompetitorsView() {
           </>
         }
       />
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <Kpi label={tx('متوسط سعر القطعة', 'Our unit value')} value={money(model.kpis.utv, locale)} hint={tx('مرجع للمقارنة السعرية', 'Reference for price comparison')} tone="gold" />
+        <Kpi label={tx('تهديد مرتفع', 'High threat')} value={String(dataset.competitors.filter((c) => c.threat === 'high').length)} hint={tx('يحتاج متابعة أسبوعية', 'Needs weekly attention')} tone={dataset.competitors.some((c) => c.threat === 'high') ? 'bad' : 'good'} />
+        <Kpi label={tx('المنافسون', 'Competitors')} value={String(dataset.competitors.length)} hint={tx('في اللقطة الحالية', 'In the current capture')} />
+      </div>
       <div className="grid gap-4 lg:grid-cols-3">
-        {dataset.competitors.map((competitor) => (
-          <Panel key={competitor.id}>
+        {dataset.competitors.map((competitor) => {
+          const threatTone = competitor.threat === 'high' ? 'bad' : competitor.threat === 'medium' ? 'warn' : undefined
+          return (
+          <Panel key={competitor.id} className={cx('border-s-2', toneAccent(threatTone))}>
             <div className="flex items-start justify-between gap-2">
-              <h2 className="text-lg font-semibold">{competitor.name}</h2>
+              <h2 className="text-sm font-semibold sm:text-base">{competitor.name}</h2>
               <Pill tone={competitor.threat === 'high' ? 'bad' : competitor.threat === 'medium' ? 'warn' : 'neutral'}>{competitor.threat === 'high' ? tx('تهديد مرتفع', 'High threat') : competitor.threat === 'medium' ? tx('متوسط', 'Medium') : tx('منخفض', 'Low')}</Pill>
             </div>
             {competitor.tagline && <p className="mt-2 text-sm text-primary">{competitor.tagline}</p>}
@@ -67,7 +74,8 @@ export default function CompetitorsView() {
             <p className="mt-2 text-xs text-muted-foreground">{tx('تاريخ الفحص', 'Checked')} {competitor.checked}</p>
             <div className="mt-3"><Button onClick={() => setScan(competitor.id)}>{tx('اقرأ اللقطة', 'Read the capture')}</Button></div>
           </Panel>
-        ))}
+          )
+        })}
       </div>
 
       {add && (
@@ -102,7 +110,12 @@ export default function CompetitorsView() {
           <ul className="mt-4 space-y-2 text-sm">
             {dataset.competitors.map((c) => {
               const dress = c.prices.find((p) => /dress/i.test(p.label)) ?? c.prices[0]
-              return <li key={c.id}>{c.name}: {dress ? `${money(dress.low, locale)} – ${money(dress.high, locale)}` : '—'} · {c.offers[0]}</li>
+              return (
+                <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/50 px-3 py-2">
+                  <span>{c.name}: {dress ? `${money(dress.low, locale)} – ${money(dress.high, locale)}` : '—'} · {c.offers[0]}</span>
+                  <Pill tone={c.threat === 'high' ? 'bad' : c.threat === 'medium' ? 'warn' : 'neutral'}>{c.threat === 'high' ? tx('مرتفع', 'High') : c.threat === 'medium' ? tx('متوسط', 'Medium') : tx('منخفض', 'Low')}</Pill>
+                </li>
+              )
             })}
           </ul>
           <div className="mt-4"><Button onClick={() => setWeekly(false)}>{tx('إغلاق', 'Close')}</Button></div>

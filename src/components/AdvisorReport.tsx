@@ -88,7 +88,7 @@ export function AdvisorSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                 ) : (
                   <div className="mt-2 space-y-2">
                     {report.priorities.map((item) => (
-                      <article key={item.id} className="rounded-xl border border-border bg-muted/40 p-3">
+                      <article key={item.id} className={`rounded-xl border border-border border-s-4 bg-muted/40 p-3 ${item.severity === 'critical' ? 'border-s-red-400/80 bg-red-500/10' : 'border-s-amber-400/80 bg-amber-500/5'}`}>
                         <div className="mb-1 flex items-start justify-between gap-2">
                           <h4 className="text-sm font-medium">{item.title}</h4>
                           <Pill tone={item.severity === 'critical' ? 'bad' : 'warn'}>{item.severity === 'critical' ? tx('حرج', 'Critical') : tx('تحذير', 'Warning')}</Pill>
@@ -116,9 +116,16 @@ export function AdvisorSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                   <p className="mt-1 text-sm leading-7">{advice.summary}</p>
                   {advice.rows.length > 0 && (
                     <ul className="mt-2 space-y-1 text-sm">
-                      {advice.rows.map((row) => (
-                        <li key={row.label} className="flex justify-between gap-3"><span>{row.label}</span><span className="num">{row.value}</span></li>
-                      ))}
+                      {advice.rows.map((row) => {
+                        const signed = /[+\-−]/.test(row.value) && /%|٪/.test(row.value)
+                        const negative = signed && /[-−]/.test(row.value)
+                        return (
+                          <li key={row.label} className="flex justify-between gap-3">
+                            <span>{row.label}</span>
+                            <span className={`num ${signed ? (negative ? 'text-red-300' : 'text-emerald-300') : 'text-primary'}`}>{row.value}</span>
+                          </li>
+                        )
+                      })}
                     </ul>
                   )}
                   <p className="mt-2 text-xs text-primary">{advice.formula}</p>

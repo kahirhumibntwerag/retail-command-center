@@ -64,19 +64,51 @@ export function PageHeader({
   actions?: ReactNode
 }) {
   return (
-    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
       <div className="max-w-3xl">
-        {eyebrow && <p className="mb-1 text-xs font-medium tracking-[0.16em] text-primary uppercase">{eyebrow}</p>}
-        <h1 className="text-xl font-semibold sm:text-3xl">{title}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>
+        {eyebrow && <p className="mb-0.5 text-[11px] font-medium tracking-[0.14em] text-primary uppercase">{eyebrow}</p>}
+        <h1 className="text-lg font-semibold sm:text-xl">{title}</h1>
+        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{subtitle}</p>
       </div>
-      {actions && <div className="flex w-full flex-wrap gap-2 sm:w-auto">{actions}</div>}
+      {actions && <div className="flex w-full flex-wrap gap-1.5 sm:w-auto">{actions}</div>}
     </div>
   )
 }
 
 export function Panel({ children, className }: { children: ReactNode; className?: string }) {
-  return <Card className={cx('px-4 shadow-sm sm:px-5', className)}>{children}</Card>
+  return <Card size="sm" className={cx('px-3 shadow-sm sm:px-3.5', className)}>{children}</Card>
+}
+
+export type MetricTone = 'good' | 'bad' | 'warn' | 'gold'
+
+export function achievementTone(ratio: number): MetricTone | undefined {
+  if (ratio >= 1) return 'good'
+  if (ratio > 0 && ratio < 0.9) return 'bad'
+  if (ratio >= 0.9) return 'warn'
+  return undefined
+}
+
+export function toneAccent(tone?: MetricTone | 'neutral') {
+  if (tone === 'good') return 'border-s-emerald-400/70'
+  if (tone === 'bad') return 'border-s-red-400/70'
+  if (tone === 'warn') return 'border-s-amber-400/70'
+  if (tone === 'gold') return 'border-s-primary/70'
+  return 'border-s-transparent'
+}
+
+export function toneText(tone?: MetricTone) {
+  if (tone === 'good') return 'text-emerald-300'
+  if (tone === 'bad') return 'text-red-300'
+  if (tone === 'warn') return 'text-amber-200'
+  if (tone === 'gold') return 'text-primary'
+  return ''
+}
+
+export function achievementBar(tone?: MetricTone) {
+  if (tone === 'good') return 'bg-emerald-400/80'
+  if (tone === 'bad') return 'bg-red-400/70'
+  if (tone === 'warn') return 'bg-amber-400/70'
+  return 'bg-primary'
 }
 
 export function Kpi({
@@ -85,18 +117,29 @@ export function Kpi({
   hint,
   tone,
   emphasis,
+  className,
 }: {
   label: string
   value: string
   hint: ReactNode
-  tone?: 'good' | 'bad' | 'gold'
+  tone?: MetricTone
   emphasis?: boolean
+  className?: string
 }) {
   return (
-    <Card className={cx('px-4 shadow-sm xl:col-span-2', emphasis && 'bg-[linear-gradient(160deg,color-mix(in_oklch,var(--primary)_24%,var(--card))_0%,var(--card)_58%)] ring-primary/40 sm:col-span-2')}>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className={cx('num mt-2 font-semibold break-words', emphasis ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl', tone === 'good' && 'text-emerald-300', tone === 'bad' && 'text-red-300', tone === 'gold' && 'text-primary')}>{value}</p>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">{hint}</p>
+    <Card size="sm" className={cx(
+      'border-s-2 px-3 shadow-sm',
+      toneAccent(tone),
+      emphasis && 'bg-[linear-gradient(160deg,color-mix(in_oklch,var(--primary)_24%,var(--card))_0%,var(--card)_58%)] ring-primary/40 sm:col-span-2',
+      className,
+    )}>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={cx(
+        'num mt-1 font-semibold break-words',
+        emphasis ? 'text-xl sm:text-2xl' : 'text-lg sm:text-xl',
+        toneText(tone),
+      )}>{value}</p>
+      {hint != null && hint !== false && hint !== '' && <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{hint}</p>}
     </Card>
   )
 }
@@ -148,7 +191,7 @@ export function Pill({ children, tone = 'neutral' }: { children: ReactNode; tone
     warn: 'border-transparent bg-amber-400/15 text-amber-200',
     gold: 'border-transparent bg-primary/15 text-primary',
   }
-  return <Badge variant="outline" className={cx('h-6 px-2.5', tones[tone])}>{children}</Badge>
+  return <Badge variant="outline" className={cx('h-5 px-2 text-[11px]', tones[tone])}>{children}</Badge>
 }
 
 export function Seg<T extends string>({
@@ -229,12 +272,11 @@ export function TableWrap({ children, className }: { children: ReactNode; classN
   return <div className={cx('max-w-full overflow-x-auto overscroll-x-contain', className)}>{children}</div>
 }
 
-export function Stat({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: ReactNode; tone?: 'good' | 'bad' | 'warn' }) {
-  const color = tone === 'good' ? 'text-emerald-300' : tone === 'bad' ? 'text-red-300' : tone === 'warn' ? 'text-amber-200' : ''
+export function Stat({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: ReactNode; tone?: MetricTone }) {
   return (
     <div className="min-w-0">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={cx('num mt-0.5 text-sm font-medium break-words', color)}>{value}</p>
+      <p className={cx('num mt-0.5 text-sm font-medium break-words', toneText(tone))}>{value}</p>
       {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
     </div>
   )

@@ -53,7 +53,16 @@ export default function AdvisorView() {
                 {turn.advice && (
                   <div className="mt-3">
                     <ul className="space-y-1 text-sm">
-                      {turn.advice.rows.map((row) => <li key={row.label} className="flex justify-between gap-3"><span>{row.label}</span><span className="num">{row.value}</span></li>)}
+                      {turn.advice.rows.map((row) => {
+                        const signed = /[+\-−]/.test(row.value) && /%|٪/.test(row.value)
+                        const negative = signed && /[-−]/.test(row.value)
+                        return (
+                          <li key={row.label} className="flex justify-between gap-3">
+                            <span>{row.label}</span>
+                            <span className={`num ${signed ? (negative ? 'text-red-300' : 'text-emerald-300') : 'text-primary'}`}>{row.value}</span>
+                          </li>
+                        )
+                      })}
                     </ul>
                     <p className="mt-3 text-xs text-primary">{turn.advice.formula}</p>
                     <p className="mt-2 text-sm">{turn.advice.action}</p>

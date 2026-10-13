@@ -1,13 +1,12 @@
-import { useState } from 'react'
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { useMemo, useState } from 'react'
+import type { ApexOptions } from 'apexcharts'
 import { exportRows } from '../excel'
 import { segmentLabel } from '../engine'
-import { money, num, percent } from '../format'
+import { compact, money, num, percent } from '../format'
 import { useStore } from '../store'
 import type { Segment } from '../types'
-import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
-import { MoneyTooltip, chartAxis } from '../components/charts'
-import { Button, cx, Drawer, PageHeader, Panel, Pill, SortTh, Stat, TableWrap, useSort } from '../components/kit'
+import { PrettyArea, categoryX, compactYAxis, moneyTooltip } from '../components/prettyCharts'
+import { achievementBar, achievementTone, Button, cx, Drawer, Kpi, PageHeader, Panel, Pill, SortTh, Stat, TableWrap, Trend, useSort } from '../components/kit'
 
 export default function BranchesView() {
   const { model, locale, tx, setView, setManagerId, setFilters, filters } = useStore()
@@ -32,24 +31,28 @@ export default function BranchesView() {
         ))}
       </div>
       <div className="flex flex-col gap-2 md:hidden">
-        {sorted.map((branch) => (
-          <button key={branch.id} type="button" onClick={() => setOpenId(branch.id)} className="rounded-2xl bg-card p-3 text-start ring-1 ring-foreground/10">
+        {sorted.map((branch) => {
+          const achievement = branch.target ? (branch.currency === 'QAR' ? branch.sales : branch.periodSalesEgp) / branch.target : 0
+          const flagged = branch.unattributed >= 0.1 || (achievement > 0 && achievement < 0.9)
+          return (
+          <button key={branch.id} type="button" onClick={() => setOpenId(branch.id)} className={cx('rounded-2xl bg-card p-3 text-start ring-1 ring-foreground/10', flagged && 'bg-red-500/5 ring-red-400/25')}>
             <span className="font-medium">{branch.name}</span>
             <span className="mt-0.5 block text-xs text-muted-foreground">{segmentLabel(branch.segment, locale)} · {branch.staff} {tx('بائعين', 'associates')}</span>
-            <span className="num mt-2 block text-lg font-semibold">{money(branch.included ? branch.periodSalesEgp : branch.periodSales, locale, branch.included ? 'EGP' : branch.currency)}</span>
+            <span className="num mt-2 block text-sm font-semibold sm:text-base">{money(branch.included ? branch.periodSalesEgp : branch.periodSales, locale, branch.included ? 'EGP' : branch.currency)}</span>
             <span className="mt-2 grid grid-cols-3 gap-2">
-              <Stat label={tx('الهدف', 'Target')} value={percent(branch.target ? (branch.currency === 'QAR' ? branch.sales : branch.periodSalesEgp) / branch.target : 0, locale, 0)} tone={(branch.target ? (branch.currency === 'QAR' ? branch.sales : branch.periodSalesEgp) / branch.target : 0) >= 1 ? 'good' : (branch.target ? (branch.currency === 'QAR' ? branch.sales : branch.periodSalesEgp) / branch.target : 1) < 0.9 ? 'bad' : undefined} />
+              <Stat label={tx('الهدف', 'Target')} value={percent(achievement, locale, 0)} tone={achievementTone(achievement)} />
               <Stat label={tx('غير منسوب', 'Unattributed')} value={percent(branch.unattributed, locale, 0)} tone={branch.unattributed >= 0.1 ? 'bad' : undefined} />
               <Stat label={tx('أعلى 3', 'Top 3')} value={percent(branch.top3, locale, 0)} tone={branch.top3 > 0.7 ? 'warn' : undefined} />
             </span>
           </button>
-        ))}
+          )
+        })}
       </div>
       <Panel className="hidden md:block">
         <TableWrap>
           <table className="w-full min-w-[980px] text-sm">
             <caption className="sr-only">{tx('أداء الفروع. العناوين قابلة للترتيب.', 'Branch performance. Headers can be sorted.')}</caption>
-            <thead className="text-[#a8b3c7]">
+            <thead className="text-muted-foreground">
               <tr>
                 <SortTh label={tx('الفرع', 'Store')} column="name" active={key} dir={dir} onSort={toggle} />
                 <SortTh label={tx('المبيعات', 'Sales')} column="periodSalesEgp" active={key} dir={dir} onSort={toggle} />
@@ -68,8 +71,9 @@ export default function BranchesView() {
             <tbody>
               {sorted.map((branch) => {
                 const achievement = branch.target ? (branch.currency === 'QAR' ? branch.sales : branch.periodSalesEgp) / branch.target : 0
+                const targetTone = achievementTone(achievement)
                 return (
-                  <tr key={branch.id} className="border-t border-white/8 hover:bg-white/4">
+                  <tr key={branch.id} className={cx('border-t border-white/8 hover:bg-white/4', branch.unattributed >= 0.1 && 'bg-red-500/5')}>
                     <td className="px-2 py-3">
                       <button type="button" className="text-start" onClick={() => setOpenId(branch.id)}>
                         <span className="font-medium">{branch.name}</span>
@@ -77,20 +81,20 @@ export default function BranchesView() {
                       </button>
                     </td>
                     <td className="num px-2 py-3">{money(branch.included ? branch.periodSalesEgp : branch.periodSales, locale, branch.included ? 'EGP' : branch.currency)}</td>
-                    <td className="num px-2 py-3">{branch.included ? percent(branch.share, locale) : tx('مستبعد', 'Excluded')}</td>
+                    <td className="num px-2 py-3">{branch.included ? percent(branch.share, locale) : <Pill tone="warn">{tx('مستبعد', 'Excluded')}</Pill>}</td>
                     <td className="num px-2 py-3">{num(Math.round(branch.periodTrx), locale)}</td>
                     <td className="num px-2 py-3">{num(Math.round(branch.atv), locale)}</td>
                     <td className="num px-2 py-3">{num(branch.upt, locale, 2)}</td>
                     <td className="num px-2 py-3">{num(Math.round(branch.utv), locale)}</td>
-                    <td className="num px-2 py-3">{num(branch.cv, locale, 3)}</td>
-                    <td className={cx('num px-2 py-3', branch.h2vsH1 <= -0.15 && 'text-red-300', branch.h2vsH1 >= 0.05 && 'text-emerald-300')}>{percent(branch.h2vsH1, locale, 1, true)}</td>
+                    <td className={cx('num px-2 py-3', branch.cv >= 0.45 && 'text-amber-200')}>{num(branch.cv, locale, 3)}</td>
+                    <td className="num px-2 py-3"><Trend ratio={branch.h2vsH1}>{percent(branch.h2vsH1, locale, 1, true)}</Trend></td>
                     <td className="px-2 py-3"><Pill tone={branch.top3 > 0.7 ? 'warn' : 'neutral'}>{percent(branch.top3, locale, 1)}</Pill></td>
                     <td className="px-2 py-3"><Pill tone={branch.unattributed >= 0.1 ? 'bad' : 'neutral'}>{percent(branch.unattributed, locale, 1)}</Pill></td>
                     <td className="px-2 py-3">
                       <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(achievement * 100)} aria-label={tx(`تحقيق الهدف ${percent(achievement, locale, 0)}`, `Target progress ${percent(achievement, locale, 0)}`)}>
-                        <div className="h-full bg-primary" style={{ width: `${Math.min(100, achievement * 100)}%` }} />
+                        <div className={cx('h-full', achievementBar(targetTone))} style={{ width: `${Math.min(100, achievement * 100)}%` }} />
                       </div>
-                      <span className={cx('num text-xs', achievement >= 1 ? 'text-emerald-300' : achievement < 0.9 ? 'text-red-300' : 'text-muted-foreground')}>{percent(achievement, locale, 0)}</span>
+                      <span className="mt-1 inline-flex"><Pill tone={targetTone ?? 'neutral'}>{percent(achievement, locale, 0)}</Pill></span>
                     </td>
                   </tr>
                 )
@@ -105,20 +109,12 @@ export default function BranchesView() {
           <h2 className="text-2xl font-semibold">{open.name}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{segmentLabel(open.segment, locale)}</p>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <Mini label={tx('متوسط الفاتورة', 'Average ticket')} value={money(open.atv, locale, open.currency)} />
-            <Mini label={tx('قطع الفاتورة', 'Units per receipt')} value={num(open.upt, locale, 2)} />
-            <Mini label={tx('سعر القطعة', 'Unit value')} value={money(open.utv, locale, open.currency)} />
-            <Mini label={tx('غير منسوب', 'Unattributed')} value={percent(open.unattributed, locale)} tone={open.unattributed >= 0.1 ? 'bad' : undefined} />
+            <Kpi label={tx('متوسط الفاتورة', 'Average ticket')} value={money(open.atv, locale, open.currency)} hint="" tone="gold" />
+            <Kpi label={tx('قطع الفاتورة', 'Units per receipt')} value={num(open.upt, locale, 2)} hint="" tone={open.upt >= 2 ? 'good' : open.upt < 1.5 ? 'bad' : 'warn'} />
+            <Kpi label={tx('سعر القطعة', 'Unit value')} value={money(open.utv, locale, open.currency)} hint="" tone="gold" />
+            <Kpi label={tx('غير منسوب', 'Unattributed')} value={percent(open.unattributed, locale)} hint="" tone={open.unattributed >= 0.1 ? 'bad' : 'good'} />
           </div>
-          <ChartContainer config={{ sales: { label: tx('المبيعات', 'Sales'), color: 'var(--chart-1)' } } satisfies ChartConfig} className="mt-4 aspect-auto h-48 w-full">
-            <AreaChart data={open.series.map((sales, i) => ({ day: i + 1, sales }))} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="day" {...chartAxis} />
-              <YAxis {...chartAxis} width={40} />
-              <MoneyTooltip locale={locale} currency={open.currency} />
-              <Area type="monotone" dataKey="sales" stroke="var(--color-sales)" fill="var(--color-sales)" fillOpacity={0.2} strokeWidth={2} />
-            </AreaChart>
-          </ChartContainer>
+          <BranchSeriesChart series={open.series} locale={locale} currency={open.currency} label={tx('المبيعات', 'Sales')} />
           <Button tone="gold" onClick={() => { setManagerId(open.id); setView('manager'); setOpenId(null) }}>{tx('رؤية مدير الفرع', 'Open store manager')}</Button>
         </Drawer>
       )}
@@ -126,6 +122,26 @@ export default function BranchesView() {
   )
 }
 
-function Mini({ label, value, tone }: { label: string; value: string; tone?: 'bad' }) {
-  return <div className="rounded-2xl bg-muted/60 p-3"><p className="text-xs text-muted-foreground">{label}</p><p className={cx('num mt-1', tone === 'bad' && 'text-red-300')}>{value}</p></div>
+function BranchSeriesChart({ series, locale, currency, label }: { series: number[]; locale: 'ar' | 'en'; currency: 'EGP' | 'QAR'; label: string }) {
+  const options = useMemo<ApexOptions>(() => ({
+    xaxis: categoryX(series.map((_, index) => String(index + 1))),
+    yaxis: compactYAxis((value) => compact(value, locale)),
+    tooltip: moneyTooltip((value) => money(Number(value ?? 0), locale, currency)),
+    legend: { show: false },
+  }), [currency, locale, series])
+  const chartSeries = useMemo(() => [{ name: label, data: series.map((value) => Math.round(value)) }], [label, series])
+  const peak = series.reduce((best, value, index) => (value > best.value ? { value, index } : best), { value: 0, index: 0 })
+  return (
+    <div className="mt-4">
+      <PrettyArea
+        series={chartSeries}
+        options={options}
+        height="compact"
+        title={label}
+        summary={locale === 'ar'
+          ? `مبيعات يومية على ${series.length} يوماً. أعلى يوم ${peak.index + 1}.`
+          : `Daily sales across ${series.length} days. Peak day ${peak.index + 1}.`}
+      />
+    </div>
+  )
 }

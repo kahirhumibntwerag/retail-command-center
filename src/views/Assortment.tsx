@@ -1,21 +1,94 @@
-import { useState } from 'react'
-import { Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts'
+import { useMemo, useState } from 'react'
+import type { ApexOptions } from 'apexcharts'
 import { exportRows } from '../excel'
 import { num, percent } from '../format'
 import { useStore } from '../store'
-import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
-import { TipRow, chartAxis } from '../components/charts'
-import { Button, PageHeader, Panel, Pill, Seg, Stat, TableWrap } from '../components/kit'
+import {
+  PrettyBar,
+  PrettyCombo,
+  categoryX,
+  dualAxisPercent,
+  useChartColors,
+} from '../components/prettyCharts'
+import { useDirection } from '@/components/ui/direction'
+import { Button, cx, Kpi, PageHeader, Panel, Pill, Seg, Stat, TableWrap, toneAccent } from '../components/kit'
 
 type Tab = 'pareto' | 'allocation' | 'dcs' | 'dead'
 
 export default function AssortmentView() {
   const { model, locale, tx } = useStore()
+  const colors = useChartColors()
+  const dir = useDirection()
   const [tab, setTab] = useState<Tab>('pareto')
   const tier50 = model.pareto.filter((row) => row.tier === '50').length
   const tier80 = model.pareto.filter((row) => row.tier !== 'tail').length
   const dead = model.pareto.filter((row) => row.model.units <= 10)
-  const chart = model.pareto.slice(0, 16).map((row) => ({ code: row.model.code, units: row.model.units, cumulative: Math.round(row.cumulative * 1000) / 10 }))
+  const chart = useMemo(
+    () => model.pareto.slice(0, 16).map((row) => ({ code: row.model.code, units: row.model.units, cumulative: Math.round(row.cumulative * 1000) / 10 })),
+    [model.pareto],
+  )
+  const paretoOptions = useMemo<ApexOptions>(() => ({
+    colors: [colors.blue, colors.gold],
+    stroke: { width: [0, 3] },
+    xaxis: categoryX(chart.map((row) => row.code), {
+      labels: { rotate: dir === 'rtl' ? 35 : -35, trim: true, hideOverlappingLabels: true },
+    }),
+    yaxis: dualAxisPercent({
+      leftTitle: tx('القطع', 'Units'),
+      rightTitle: tx('تراكمي %', 'Cumulative %'),
+      leftFormat: (value) => num(value, locale),
+      rightFormat: (value) => `${num(value, locale, 0)}%`,
+      rtl: dir === 'rtl',
+    }),
+    tooltip: {
+      shared: true,
+      y: {
+        formatter: (value, opts) => (
+          opts?.seriesIndex === 1 ? `${num(Number(value ?? 0), locale, 1)}%` : num(Number(value ?? 0), locale)
+        ),
+      },
+    },
+  }), [chart, colors.blue, colors.gold, dir, locale, tx])
+  const paretoSeries = useMemo(() => [
+    { name: tx('القطع', 'Units'), type: 'column', data: chart.map((row) => row.units) },
+    { name: tx('تراكمي', 'Cumulative'), type: 'line', data: chart.map((row) => row.cumulative) },
+  ], [chart, tx])
+
+  const dcsMean = model.dcs.length ? model.dcs.reduce((s, r) => s + r.chainShare, 0) / model.dcs.length : 0
+  const dcsOptions = useMemo<ApexOptions>(() => ({
+    xaxis: {
+      categories: model.dcs.map((row) => row.category),
+      max: Math.max(...model.dcs.map((row) => Math.round(row.chainShare * 1000) / 10), 1),
+      labels: {
+        formatter: (value) => {
+          const n = Number(value)
+          return Number.isFinite(n) ? `${num(n, locale, 1)}%` : String(value)
+        },
+      },
+    },
+    colors: model.dcs.map((row) => (
+      row.chainShare >= dcsMean * 1.25 ? colors.teal :
+      row.chainShare <= dcsMean * 0.6 ? colors.amber :
+      colors.blue
+    )),
+    dataLabels: {
+      enabled: true,
+      formatter: (value) => `${num(Number(value), locale, 1)}%`,
+    },
+    tooltip: {
+      y: {
+        formatter: (_value, opts) => {
+          const row = model.dcs[opts?.dataPointIndex ?? 0]
+          return row ? `${num(row.units, locale)} · ${percent(row.chainShare, locale)}` : ''
+        },
+      },
+    },
+    legend: { show: false },
+  }), [colors.amber, colors.blue, colors.teal, dcsMean, locale, model.dcs])
+  const dcsSeries = useMemo(() => [{
+    name: tx('حصة الفئة', 'Category share'),
+    data: model.dcs.map((row) => Math.round(row.chainShare * 1000) / 10),
+  }], [model.dcs, tx])
 
   return (
     <div>
@@ -26,10 +99,10 @@ export default function AssortmentView() {
         actions={<Button onClick={() => exportRows('models.xlsx', 'Models', model.pareto.map((row) => ({ code: row.model.code, name: row.model.name, units: row.model.units, cumulative: row.cumulative, tier: row.tier })))}>{tx('تصدير', 'Export')}</Button>}
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <Mini label={tx('الموديلات', 'Styles')} value={String(model.pareto.length)} />
-        <Mini label={tx('تصنع 50%', 'Make 50%')} value={String(tier50)} />
-        <Mini label={tx('تصنع 80%', 'Make 80%')} value={String(tier80)} />
-        <Mini label={tx('راكد ≤ 10', 'Dead ≤ 10')} value={String(dead.length)} />
+        <Kpi label={tx('الموديلات', 'Styles')} value={String(model.pareto.length)} hint="" />
+        <Kpi label={tx('تصنع 50%', 'Make 50%')} value={String(tier50)} hint="" tone="gold" />
+        <Kpi label={tx('تصنع 80%', 'Make 80%')} value={String(tier80)} hint="" tone="good" />
+        <Kpi label={tx('راكد ≤ 10', 'Dead ≤ 10')} value={String(dead.length)} hint="" tone="bad" />
       </div>
       <Seg value={tab} onChange={setTab} options={[
         { id: 'pareto', label: tx('باريتو', 'Pareto') },
@@ -40,32 +113,16 @@ export default function AssortmentView() {
 
       {tab === 'pareto' && (
         <Panel className="mt-4">
-          <ChartContainer
-            config={{
-              units: { label: tx('القطع', 'Units'), color: 'var(--chart-2)' },
-              cumulative: { label: tx('تراكمي', 'Cumulative'), color: 'var(--chart-1)' },
-            } satisfies ChartConfig}
-            className="aspect-auto h-64 w-full sm:h-72"
-          >
-            <ComposedChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="code" {...chartAxis} interval={0} angle={-35} height={64} textAnchor="end" />
-              <YAxis yAxisId="u" {...chartAxis} width={36} />
-              <YAxis yAxisId="c" orientation="right" {...chartAxis} width={40} unit="%" />
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    formatter={(value, name) => (
-                      <TipRow label={String(name ?? '')} value={name === 'cumulative' || name === tx('تراكمي', 'Cumulative') ? `${value}%` : num(Number(value), locale)} />
-                    )}
-                  />
-                }
-              />
-              <ChartLegend content={<ChartLegendContent />} />
-              <Bar yAxisId="u" dataKey="units" fill="var(--color-units)" radius={[6, 6, 0, 0]} />
-              <Line yAxisId="c" dataKey="cumulative" stroke="var(--color-cumulative)" strokeWidth={2.5} dot={false} />
-            </ComposedChart>
-          </ChartContainer>
+          <PrettyCombo
+            series={paretoSeries}
+            options={paretoOptions}
+            height="panel"
+            title={tx('باريتو', 'Pareto')}
+            summary={tx(
+              `أعلى 16 موديلاً. ${tier50} تصنع 50٪ و${tier80} تصنع 80٪.`,
+              `Top 16 styles. ${tier50} make 50% and ${tier80} make 80%.`,
+            )}
+          />
           <div className="mt-4 flex flex-col gap-2 md:hidden">
             {model.pareto.map((row, index) => (
               <article key={row.model.code} className="rounded-2xl bg-muted/50 p-3">
@@ -108,7 +165,7 @@ export default function AssortmentView() {
           <p className="text-sm text-muted-foreground">{tx('فئة وزنها 5% أو أكثر في السلسلة ومبيعاتها صفر داخل فرع من نفس الشريحة.', 'A category with at least 5% of chain units and zero sales in a store from the same segment.')}</p>
           {model.allocation.length === 0 && <Panel><p>{tx('لا فجوات داخل التصفية الحالية.', 'No gaps inside the current filter.')}</p></Panel>}
           {model.allocation.map((gap) => (
-            <Panel key={`${gap.branchName}-${gap.category}`}>
+            <Panel key={`${gap.branchName}-${gap.category}`} className={cx('border-s-2', toneAccent('bad'))}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-semibold">{gap.branchName}</h3>
                 <Pill tone="bad">{gap.category}</Pill>
@@ -121,23 +178,30 @@ export default function AssortmentView() {
 
       {tab === 'dcs' && (
         <Panel className="mt-4">
-          <p className="mb-3 text-sm text-muted-foreground">{tx('حصة كل فئة من قطع ملف التشكيلة. الأخضر فوق المتوسط ليس متاحاً هنا لأن المقارنة على مستوى السلسلة.', 'Share of each category in the style file.')}</p>
-          <ul className="space-y-3">
-            {model.dcs.map((row) => (
-              <li key={row.category}>
-                <div className="mb-1 flex justify-between text-sm"><span>{row.category}</span><span className="num">{num(row.units, locale)} · {percent(row.chainShare, locale)}</span></div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/8"><div className="h-full bg-[#7eb6ff]" style={{ width: `${Math.min(100, row.chainShare * 100)}%` }} /></div>
-              </li>
-            ))}
-          </ul>
+          <p className="mb-3 text-sm text-muted-foreground">{tx('حصة كل فئة من قطع ملف التشكيلة.', 'Share of each category in the style file.')}</p>
+          <PrettyBar
+            series={dcsSeries}
+            options={dcsOptions}
+            height="panel"
+            horizontal
+            distributed
+            title={tx('انحراف الفئات', 'Category mix')}
+            summary={tx(
+              `حصص ${model.dcs.length} فئة من ملف التشكيلة.`,
+              `Share of ${model.dcs.length} categories in the style file.`,
+            )}
+          />
         </Panel>
       )}
 
       {tab === 'dead' && (
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {dead.map((row) => (
-            <Panel key={row.model.code}>
-              <p className="text-xs text-muted-foreground">{row.model.code}</p>
+            <Panel key={row.model.code} className={cx('border-s-2', toneAccent('bad'))}>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs text-muted-foreground">{row.model.code}</p>
+                <Pill tone="bad">{tx('راكد', 'Dead')}</Pill>
+              </div>
               <h3 className="font-semibold">{row.model.name}</h3>
               <p className="mt-2 text-sm">{tx(`${row.model.units} قطع فقط. انقل المتبقي إلى أوتلت شبرا أو اخفض السعر.`, `Only ${row.model.units} units. Move the remainder to Shubra outlet or mark it down.`)}</p>
             </Panel>
@@ -146,8 +210,4 @@ export default function AssortmentView() {
       )}
     </div>
   )
-}
-
-function Mini({ label, value }: { label: string; value: string }) {
-  return <article className="rounded-xl bg-card p-4 text-card-foreground shadow-sm ring-1 ring-foreground/10"><p className="text-sm text-muted-foreground">{label}</p><p className="num mt-2 text-2xl">{value}</p></article>
 }

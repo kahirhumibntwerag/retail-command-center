@@ -4,7 +4,7 @@ import { exportRows } from '../excel'
 import { money, num } from '../format'
 import { useStore } from '../store'
 import type { CustomerSegment } from '../types'
-import { Button, Drawer, Modal, PageHeader, Panel, Pill, Select, Stat, TableWrap, useSort } from '../components/kit'
+import { Button, Drawer, Kpi, Modal, PageHeader, Panel, Pill, Select, Stat, TableWrap, useSort } from '../components/kit'
 
 const SEGMENTS: Record<CustomerSegment, { ar: string; en: string; tone: 'gold' | 'good' | 'warn' | 'bad' }> = {
   champion: { ar: 'بطل', en: 'Champion', tone: 'gold' },
@@ -64,10 +64,10 @@ export default function CustomersView() {
         }
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Mini label={tx('العملاء', 'Customers')} value={num(model.customers.length, locale)} hint={tx(`حصة الأبطال من الإنفاق ${championShare ? Math.round((champ / championShare) * 100) : 0}%`, `Champions are ${championShare ? Math.round((champ / championShare) * 100) : 0}% of spend`)} />
-        <Mini label={tx('أبطال / منتظمون', 'Champions / regulars')} value={`${counts.champion} / ${counts.regular}`} hint={tx('ولاء وإنفاق دوري', 'Loyalty and a steady rhythm')} />
-        <Mini label={tx('معرضون / متوقفون', 'At risk / retired')} value={`${counts.near} / ${counts.retired}`} hint={tx('المتوقف غاب أكثر من 150 يوماً', 'Retired means more than 150 days away')} />
-        <Mini label={tx('متوسط قيمة العميل', 'Average lifetime value')} value={money(ltv, locale)} hint={tx('إنفاق تراكمي', 'Cumulative spend')} />
+        <Kpi label={tx('العملاء', 'Customers')} value={num(model.customers.length, locale)} hint={tx(`حصة الأبطال من الإنفاق ${championShare ? Math.round((champ / championShare) * 100) : 0}%`, `Champions are ${championShare ? Math.round((champ / championShare) * 100) : 0}% of spend`)} />
+        <Kpi label={tx('أبطال / منتظمون', 'Champions / regulars')} value={`${counts.champion} / ${counts.regular}`} hint={tx('ولاء وإنفاق دوري', 'Loyalty and a steady rhythm')} tone="good" />
+        <Kpi label={tx('معرضون / متوقفون', 'At risk / retired')} value={`${counts.near} / ${counts.retired}`} hint={tx('المتوقف غاب أكثر من 150 يوماً', 'Retired means more than 150 days away')} tone={counts.near + counts.retired ? 'warn' : 'good'} />
+        <Kpi label={tx('متوسط قيمة العميل', 'Average lifetime value')} value={money(ltv, locale)} hint={tx('إنفاق تراكمي', 'Cumulative spend')} tone="gold" />
       </div>
       <div className="mb-4 flex flex-wrap gap-2">
         <Select
@@ -105,9 +105,9 @@ export default function CustomersView() {
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Stat label={tx('آخر شراء', 'Last buy')} value={customer.last} />
-              <Stat label="LTV" value={money(customer.ltv, locale)} />
+              <Stat label="LTV" value={money(customer.ltv, locale)} tone={customer.segment === 'champion' ? 'gold' : undefined} />
               <Stat label="TRX" value={String(customer.invoices)} />
-              <Stat label={tx('منذ', 'Ago')} value={tx(`${customerAge(customer)} يوماً`, `${customerAge(customer)} days`)} />
+              <Stat label={tx('منذ', 'Ago')} value={tx(`${customerAge(customer)} يوماً`, `${customerAge(customer)} days`)} tone={customer.segment === 'near' ? 'warn' : customer.segment === 'retired' ? 'bad' : undefined} />
             </div>
             <div className="mt-3">
               <Button onClick={() => setId(customer.id)}>{tx('السجل', 'Ledger')}</Button>
@@ -161,7 +161,10 @@ export default function CustomersView() {
 
       {campaign && (
         <Modal title={tx('حملة', 'Campaign')} onClose={() => setCampaign(null)}>
-          <h2 className="mb-2 text-xl font-semibold">{tx(SEGMENTS[campaign].ar, SEGMENTS[campaign].en)}</h2>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <h2 className="text-xl font-semibold">{tx(SEGMENTS[campaign].ar, SEGMENTS[campaign].en)}</h2>
+            <Pill tone={SEGMENTS[campaign].tone}>{tx(SEGMENTS[campaign].ar, SEGMENTS[campaign].en)}</Pill>
+          </div>
           <p className="rounded-2xl bg-muted/70 p-4 leading-7">{message(campaign)}</p>
           <div className="mt-4"><Button tone="gold" onClick={() => { void navigator.clipboard.writeText(message(campaign)); notify(tx('تم النسخ', 'Copied')) }}>{tx('نسخ الرسالة', 'Copy message')}</Button></div>
         </Modal>
@@ -186,8 +189,4 @@ export default function CustomersView() {
       )}
     </div>
   )
-}
-
-function Mini({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return <article className="rounded-xl bg-card p-4 text-card-foreground shadow-sm ring-1 ring-foreground/10"><p className="text-sm text-muted-foreground">{label}</p><p className="num mt-2 text-2xl">{value}</p><p className="mt-1 text-xs text-muted-foreground">{hint}</p></article>
 }

@@ -35,7 +35,7 @@
   --input: oklch(1 0 0 / 14%);
   --ring: oklch(0.82 0.11 85);
   --chart-1: oklch(0.82 0.11 85);
-  --chart-2: oklch(0.74 0.08 250);
+  --chart-2: oklch(0.78 0.12 245);
   --chart-3: oklch(0.76 0.1 165);
   --chart-4: oklch(0.78 0.12 55);
   --chart-5: oklch(0.68 0.14 18);
@@ -97,28 +97,28 @@ textarea {
 }
 
 html[dir="rtl"] {
-  --text-xs: 0.875rem;
-  --text-xs--line-height: 1.65;
-  --text-sm: 1rem;
-  --text-sm--line-height: 1.8;
-  --text-base: 1.0625rem;
-  --text-base--line-height: 1.85;
-  --text-lg: 1.25rem;
-  --text-lg--line-height: 1.7;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.6;
+  --text-lg: 1rem;
+  --text-lg--line-height: 1.5;
   --tracking-tight: 0em;
   --tracking-normal: 0em;
   --tracking-wide: 0em;
 }
 
 html[dir="rtl"] body {
-  font-size: 17px;
-  line-height: 1.85;
+  font-size: 14px;
+  line-height: 1.55;
   text-rendering: auto;
 }
 
 html[dir="rtl"] :where(p, li, h1, h2, h3, h4, td, th, dt, dd) {
   letter-spacing: 0;
-  line-height: 1.8;
+  line-height: 1.55;
 }
 
 html[dir="rtl"] [class*="tracking-"] {
@@ -208,7 +208,7 @@ html[dir="rtl"] [class*="tracking-"] {
   --input: oklch(1 0 0 / 14%);
   --ring: oklch(0.82 0.11 85);
   --chart-1: oklch(0.82 0.11 85);
-  --chart-2: oklch(0.74 0.08 250);
+  --chart-2: oklch(0.78 0.12 245);
   --chart-3: oklch(0.76 0.1 165);
   --chart-4: oklch(0.78 0.12 55);
   --chart-5: oklch(0.68 0.14 18);

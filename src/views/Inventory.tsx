@@ -4,7 +4,7 @@ import { exportRows } from '../excel'
 import { money, num } from '../format'
 import { useStore } from '../store'
 import type { MoveStatus, Sku } from '../types'
-import { Button, Drawer, Modal, PageHeader, Panel, Pill, Select, Stat, TableWrap } from '../components/kit'
+import { Button, cx, Drawer, Kpi, Modal, PageHeader, Panel, Pill, Select, Stat, TableWrap, toneAccent } from '../components/kit'
 
 const STATUS: Record<MoveStatus, { ar: string; en: string; tone: 'good' | 'neutral' | 'bad' }> = {
   fast: { ar: 'سريع', en: 'Fast', tone: 'good' },
@@ -54,17 +54,24 @@ export default function InventoryView() {
         }
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Mini label={tx('الأصناف الظاهرة', 'Visible styles')} value={String(rows.length)} hint={tx(`${num(onHand, locale)} قطعة`, `${num(onHand, locale)} units`)} />
-        <Mini label={tx('سريعة الحركة', 'Fast')} value={String(dataset.inventory.filter((r) => r.status === 'fast').length)} hint={money(fastValue, locale)} />
-        <Mini label={tx('راكدة', 'Dead')} value={String(dataset.inventory.filter((r) => r.status === 'dead').length)} hint={tx('تحتاج قرار تسييل', 'Need a cash decision')} />
-        <Mini label={tx('رأس المال المجمد', 'Frozen capital')} value={money(frozen, locale)} hint={tx('مجموع قيمة الراكد المقيدة', 'Tied up in non-moving styles')} />
+        <Kpi label={tx('الأصناف الظاهرة', 'Visible styles')} value={String(rows.length)} hint={tx(`${num(onHand, locale)} قطعة`, `${num(onHand, locale)} units`)} />
+        <Kpi label={tx('سريعة الحركة', 'Fast')} value={String(dataset.inventory.filter((r) => r.status === 'fast').length)} hint={money(fastValue, locale)} tone="good" />
+        <Kpi label={tx('راكدة', 'Dead')} value={String(dataset.inventory.filter((r) => r.status === 'dead').length)} hint={tx('تحتاج قرار تسييل', 'Need a cash decision')} tone="bad" />
+        <Kpi label={tx('رأس المال المجمد', 'Frozen capital')} value={money(frozen, locale)} hint={tx('مجموع قيمة الراكد المقيدة', 'Tied up in non-moving styles')} tone="bad" />
       </div>
       <div className="mb-4 flex flex-wrap gap-2">
-        {(['all', 'fast', 'normal', 'dead'] as const).map((id) => (
-          <button key={id} type="button" aria-pressed={status === id} onClick={() => setStatus(id)} className={`rounded-full px-3 py-1 text-sm ${status === id ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+        {(['all', 'fast', 'normal', 'dead'] as const).map((id) => {
+          const selected = status === id
+          const chip =
+            id === 'fast' ? (selected ? 'bg-emerald-400/25 text-emerald-100 ring-1 ring-emerald-400/40' : 'bg-muted') :
+            id === 'dead' ? (selected ? 'bg-red-400/25 text-red-100 ring-1 ring-red-400/40' : 'bg-muted') :
+            selected ? 'bg-primary text-primary-foreground' : 'bg-muted'
+          return (
+          <button key={id} type="button" aria-pressed={selected} onClick={() => setStatus(id)} className={cx('rounded-full px-3 py-1 text-sm', chip)}>
             {id === 'all' ? tx('الكل', 'All') : tx(STATUS[id].ar, STATUS[id].en)}
           </button>
-        ))}
+          )
+        })}
         <Select
           ariaLabel={tx('الترتيب', 'Sort')}
           value={sort}
@@ -92,7 +99,7 @@ export default function InventoryView() {
             <span className="mt-3 grid grid-cols-2 gap-2">
               <Stat label={tx('المخزون', 'On hand')} value={num(item.onHand, locale)} />
               <Stat label={tx('مبيعات 30 يوم', '30-day sales')} value={num(item.sold30, locale)} />
-              <Stat label="DOI" value={item.doi == null ? '∞' : tx(`${item.doi} يوم`, `${item.doi} days`)} />
+              <Stat label="DOI" value={item.doi == null ? '∞' : tx(`${item.doi} يوم`, `${item.doi} days`)} tone={item.status === 'dead' || (item.doi != null && item.doi > 90) ? 'bad' : item.doi != null && item.doi < 21 ? 'good' : undefined} />
               <Stat label={tx('مجمّد', 'Frozen')} value={item.frozen ? money(item.frozen, locale) : '—'} tone={item.frozen ? 'bad' : undefined} />
             </span>
           </button>
@@ -104,14 +111,14 @@ export default function InventoryView() {
             <thead className="text-muted-foreground"><tr><th className="px-2 py-2 text-start">SKU</th><th className="px-2 py-2 text-start">{tx('الحالة', 'Status')}</th><th className="px-2 py-2 text-start">{tx('المخزون', 'On hand')}</th><th className="px-2 py-2 text-start">{tx('مبيعات 30 يوم', '30-day sales')}</th><th className="px-2 py-2 text-start">DOI</th><th className="px-2 py-2 text-start">{tx('مجمّد', 'Frozen')}</th></tr></thead>
             <tbody>
               {rows.map((item) => (
-                <tr key={item.code} className="border-t border-white/8">
+                <tr key={item.code} className={cx('border-t border-white/8', item.status === 'dead' && 'bg-red-500/5')}>
                   <td className="px-2 py-3"><p className="font-medium">{item.code}</p><p className="text-xs text-muted-foreground">{item.name} · {item.dept}</p></td>
                   <td className="px-2 py-3"><Pill tone={STATUS[item.status].tone}>{tx(STATUS[item.status].ar, STATUS[item.status].en)}</Pill></td>
                   <td className="num px-2 py-3">{num(item.onHand, locale)}</td>
                   <td className="num px-2 py-3">{num(item.sold30, locale)} · {item.weekly}/w</td>
-                  <td className="num px-2 py-3">{item.doi == null ? '∞' : tx(`${item.doi} يوم`, `${item.doi} days`)}</td>
+                  <td className={cx('num px-2 py-3', (item.status === 'dead' || (item.doi != null && item.doi > 90)) && 'text-red-300', item.doi != null && item.doi < 21 && 'text-emerald-300')}>{item.doi == null ? '∞' : tx(`${item.doi} يوم`, `${item.doi} days`)}</td>
                   <td className="px-2 py-3">
-                    <div className="num">{item.frozen ? money(item.frozen, locale) : '—'}</div>
+                    <div className={cx('num', item.frozen ? 'text-red-300' : '')}>{item.frozen ? money(item.frozen, locale) : '—'}</div>
                     <button type="button" className="mt-1 text-xs text-primary underline" onClick={() => setSku(item)}>{tx('التوزيع', 'Split')}</button>
                   </td>
                 </tr>
@@ -153,8 +160,9 @@ export default function InventoryView() {
           <p className="mt-3 leading-7">{tx(ACTION[sku.action].ar, ACTION[sku.action].en)}</p>
           <ul className="mt-4 space-y-2">
             {skuSplit(sku, dataset.branches).map((row) => (
-              <li key={row.id} className="flex justify-between rounded-xl bg-muted/60 px-3 py-2 text-sm">
-                <span>{row.name}</span><span className="num">{row.qty === 0 ? tx('صفر — افحص الإرسال', 'Zero — check the send') : num(row.qty, locale)}</span>
+              <li key={row.id} className={cx('flex justify-between rounded-xl border-s-2 bg-muted/60 px-3 py-2 text-sm', row.qty === 0 ? toneAccent('bad') : toneAccent())}>
+                <span>{row.name}</span>
+                <span className={cx('num', row.qty === 0 && 'text-red-300')}>{row.qty === 0 ? tx('صفر — افحص الإرسال', 'Zero — check the send') : num(row.qty, locale)}</span>
               </li>
             ))}
           </ul>
@@ -162,8 +170,4 @@ export default function InventoryView() {
       )}
     </div>
   )
-}
-
-function Mini({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return <article className="rounded-xl bg-card p-4 text-card-foreground shadow-sm ring-1 ring-foreground/10"><p className="text-sm text-muted-foreground">{label}</p><p className="num mt-2 text-2xl">{value}</p><p className="mt-1 text-xs text-muted-foreground">{hint}</p></article>
 }

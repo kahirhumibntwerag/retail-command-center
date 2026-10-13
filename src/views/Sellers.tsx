@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
-import { CartesianGrid, ReferenceLine, Scatter, ScatterChart, XAxis, YAxis, ZAxis } from 'recharts'
+import type { ApexOptions } from 'apexcharts'
 import { exportRows } from '../excel'
 import type { CoachKind } from '../types'
 import { compact, money, num } from '../format'
 import { useStore } from '../store'
 import { Input } from '@/components/ui/input'
-import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart'
-import { TipRow, chartAxis } from '../components/charts'
-import { Button, Drawer, PageHeader, Panel, Pill, Select, SortTh, Stat, TableWrap, useSort } from '../components/kit'
+import { PrettyBubble, useChartColors } from '../components/prettyCharts'
+import { useDirection } from '@/components/ui/direction'
+import { Button, cx, Drawer, PageHeader, Panel, Pill, Select, SortTh, Stat, TableWrap, toneAccent, useSort } from '../components/kit'
 
 const COACH: Record<CoachKind, { ar: string; en: string; tone: 'good' | 'warn' | 'bad' | 'gold' | 'neutral'; tipAr: string; tipEn: string }> = {
   star: { ar: 'نجم مبيعات', en: 'Star', tone: 'good', tipAr: 'اطلب منه تدريب زميل هذا الأسبوع، ولا تنقله من العملاء.', tipEn: 'Ask them to coach one peer this week. Do not pull them off customers.' },
@@ -20,6 +20,8 @@ const COACH: Record<CoachKind, { ar: string; en: string; tone: 'good' | 'warn' |
 
 export default function SellersView() {
   const { model, locale, tx, dataset } = useStore()
+  const colors = useChartColors()
+  const layoutDir = useDirection()
   const [q, setQ] = useState('')
   const [branch, setBranch] = useState('all')
   const [only, setOnly] = useState<CoachKind | 'all'>('all')
@@ -32,7 +34,48 @@ export default function SellersView() {
   }), [model.sellers, branch, only, q])
   const { sorted, toggle, key, dir } = useSort(rows, 'sales')
   const selected = model.sellers.find((s) => s.id === id)
-  const scatter = model.sellers.filter((s) => s.sales > 0).slice(0, 180).map((s) => ({ name: s.name, atv: Math.round(s.atv), upt: Number(s.upt.toFixed(2)), sales: Math.round(s.sales) }))
+  const scatter = useMemo(
+    () => model.sellers.filter((s) => s.sales > 0).slice(0, 120).map((s) => ({ name: s.name, atv: Math.round(s.atv), upt: Number(s.upt.toFixed(2)), sales: Math.round(s.sales) })),
+    [model.sellers],
+  )
+  const maxSales = useMemo(() => Math.max(...scatter.map((row) => row.sales), 1), [scatter])
+  const scatterOptions = useMemo<ApexOptions>(() => ({
+    colors: [colors.gold],
+    xaxis: {
+      title: { text: 'ATV', style: { color: colors.muted } },
+      labels: { formatter: (value) => compact(Number(value), locale) },
+      tickAmount: 6,
+      min: Math.min(...scatter.map((row) => row.atv), model.kpis.atv) * 0.9,
+    },
+    yaxis: {
+      title: { text: 'UPT', style: { color: colors.muted } },
+      labels: {
+        formatter: (value) => num(Number(value), locale, 1),
+        offsetX: layoutDir === 'rtl' ? -4 : 0,
+      },
+      tickAmount: 5,
+    },
+    annotations: {
+      xaxis: [{ x: model.kpis.atv, borderColor: colors.gold, strokeDashArray: 5, label: { text: 'ATV ⌀', style: { color: '#0b101b', background: colors.gold } } }],
+      yaxis: [{ y: model.kpis.upt, borderColor: colors.blue, strokeDashArray: 5, label: { text: 'UPT ⌀', style: { color: '#0b101b', background: colors.blue } } }],
+    },
+    tooltip: {
+      custom: ({ dataPointIndex }) => {
+        const row = scatter[dataPointIndex]
+        if (!row) return ''
+        return `<div class="rounded-lg border border-white/10 bg-[#151b28] px-2.5 py-1.5 text-xs shadow-xl">
+          <p class="mb-1 font-medium text-white">${row.name}</p>
+          <p class="text-[#a8b3c7]">ATV <span class="text-white">${money(row.atv, locale)}</span></p>
+          <p class="text-[#a8b3c7]">UPT <span class="text-white">${num(row.upt, locale, 2)}</span></p>
+          <p class="text-[#a8b3c7]">${tx('المبيعات', 'Sales')} <span class="text-white">${money(row.sales, locale)}</span></p>
+        </div>`
+      },
+    },
+  }), [colors.blue, colors.gold, colors.muted, layoutDir, locale, model.kpis.atv, model.kpis.upt, scatter, tx])
+  const scatterSeries = useMemo(() => [{
+    name: tx('البائعون', 'Associates'),
+    data: scatter.map((row) => [row.atv, row.upt, Math.max(6, Math.round((row.sales / maxSales) * 32))]),
+  }], [maxSales, scatter, tx])
 
   return (
     <div>
@@ -43,40 +86,23 @@ export default function SellersView() {
         actions={<Button onClick={() => exportRows('sellers.xlsx', 'Sellers', sorted.map((s) => ({ name: s.name, branch: s.branchName, sales: Math.round(s.sales), trx: s.trx, upt: Number(s.upt.toFixed(2)), atv: Math.round(s.atv), coach: s.coach, floating: s.floating })))}>{tx('تصدير', 'Export')}</Button>}
       />
       <Panel>
-        <h2 className="mb-1 text-lg font-semibold">{tx('مصفوفة التدريب', 'Coaching quadrants')}</h2>
+        <h2 className="mb-1 text-sm font-semibold sm:text-base">{tx('مصفوفة التدريب', 'Coaching quadrants')}</h2>
         <p className="mb-3 text-sm text-muted-foreground">{tx(`متوسط السلسلة: قطع الفاتورة ${num(model.kpis.upt, locale, 2)} · متوسط الفاتورة ${money(model.kpis.atv, locale)}`, `Chain average: units per receipt ${num(model.kpis.upt, locale, 2)} · average ticket ${money(model.kpis.atv, locale)}`)}</p>
-        <p className="sr-only">{tx('مصفوفة: المحور الأفقي متوسط الفاتورة، والرأسي عدد القطع في الفاتورة. الخطوط هي متوسط السلسلة.', 'Scatter: horizontal is ticket, vertical is units per receipt. Lines mark the chain average.')}</p>
-        <ChartContainer config={{ sellers: { label: tx('البائعون', 'Associates'), color: 'var(--chart-1)' } } satisfies ChartConfig} className="aspect-auto h-64 w-full sm:h-80">
-          <ScatterChart margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid />
-            <XAxis dataKey="atv" name="ATV" type="number" {...chartAxis} tickFormatter={(value) => compact(Number(value), locale)} />
-            <YAxis dataKey="upt" name="UPT" type="number" {...chartAxis} width={36} />
-            <ZAxis dataKey="sales" range={[48, 240]} />
-            <ChartTooltip
-              cursor={{ strokeDasharray: '3 3' }}
-              content={({ active, payload }) => {
-                const row = payload?.[0]?.payload as { name?: string; atv?: number; upt?: number; sales?: number } | undefined
-                if (!active || !row) return null
-                return (
-                  <div className="grid min-w-36 gap-1 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
-                    <p className="font-medium">{row.name}</p>
-                    <TipRow label="ATV" value={money(row.atv ?? 0, locale)} />
-                    <TipRow label="UPT" value={num(row.upt ?? 0, locale, 2)} />
-                    <TipRow label={tx('المبيعات', 'Sales')} value={money(row.sales ?? 0, locale)} />
-                  </div>
-                )
-              }}
-            />
-            <ReferenceLine x={model.kpis.atv} stroke="var(--chart-1)" strokeDasharray="4 4" />
-            <ReferenceLine y={model.kpis.upt} stroke="var(--chart-2)" strokeDasharray="4 4" />
-            <Scatter data={scatter} fill="var(--chart-1)" />
-          </ScatterChart>
-        </ChartContainer>
+        <PrettyBubble
+          series={scatterSeries}
+          options={scatterOptions}
+          height="hero"
+          title={tx('مصفوفة التدريب', 'Coaching quadrants')}
+          summary={tx(
+            `مصفوفة: المحور الأفقي متوسط الفاتورة، والرأسي عدد القطع في الفاتورة. متوسط السلسلة UPT ${num(model.kpis.upt, locale, 2)} و ATV ${money(model.kpis.atv, locale)}.`,
+            `Scatter: horizontal is ticket, vertical is units per receipt. Chain average UPT ${num(model.kpis.upt, locale, 2)} and ATV ${money(model.kpis.atv, locale)}.`,
+          )}
+        />
         <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          <Note title={tx('نجوم', 'Stars')} body={tx('UPT و ATV فوق السلسلة', 'UPT and ATV above the chain')} />
-          <Note title={tx('تدريب سلة', 'UPT coaching')} body={tx('فاتورة قوية وقطع قليلة', 'Strong ticket, thin basket')} />
-          <Note title={tx('رفع الفاتورة', 'Raise ATV')} body={tx('قطع أكثر بسعر أقل', 'More units, lower price')} />
-          <Note title={tx('تطوير شامل', 'Full development')} body={tx('ضعف على المحورين', 'Weak on both axes')} />
+          <Note title={tx('نجوم', 'Stars')} body={tx('UPT و ATV فوق السلسلة', 'UPT and ATV above the chain')} tone="good" />
+          <Note title={tx('تدريب سلة', 'UPT coaching')} body={tx('فاتورة قوية وقطع قليلة', 'Strong ticket, thin basket')} tone="warn" />
+          <Note title={tx('رفع الفاتورة', 'Raise ATV')} body={tx('قطع أكثر بسعر أقل', 'More units, lower price')} tone="warn" />
+          <Note title={tx('تطوير شامل', 'Full development')} body={tx('ضعف على المحورين', 'Weak on both axes')} tone="bad" />
         </div>
       </Panel>
 
@@ -100,7 +126,7 @@ export default function SellersView() {
 
       <div className="flex flex-col gap-2 md:hidden">
         {sorted.slice(0, 80).map((seller) => (
-          <article key={seller.id} className="rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
+          <article key={seller.id} className={cx('rounded-2xl border-s-2 bg-card p-3 ring-1 ring-foreground/10', toneAccent(COACH[seller.coach].tone === 'neutral' ? undefined : COACH[seller.coach].tone))}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-medium">{seller.name}</p>
@@ -109,9 +135,9 @@ export default function SellersView() {
               <Pill tone={COACH[seller.coach].tone}>{tx(COACH[seller.coach].ar, COACH[seller.coach].en)}</Pill>
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2">
-              <Stat label={tx('المبيعات', 'Sales')} value={money(seller.sales, locale)} />
-              <Stat label={tx('قطع الفاتورة', 'Units per receipt')} value={num(seller.upt, locale, 2)} />
-              <Stat label={tx('متوسط الفاتورة', 'Average ticket')} value={money(seller.atv, locale)} />
+              <Stat label={tx('المبيعات', 'Sales')} value={money(seller.sales, locale)} tone="gold" />
+              <Stat label={tx('قطع الفاتورة', 'Units per receipt')} value={num(seller.upt, locale, 2)} tone={seller.upt >= model.kpis.upt ? 'good' : 'warn'} />
+              <Stat label={tx('متوسط الفاتورة', 'Average ticket')} value={money(seller.atv, locale)} tone={seller.atv >= model.kpis.atv ? 'good' : 'warn'} />
             </div>
             <div className="mt-3">
               <Button onClick={() => setId(seller.id)}>{tx('توجيه', 'Coach')}</Button>
@@ -136,15 +162,15 @@ export default function SellersView() {
             </thead>
             <tbody>
               {sorted.slice(0, 80).map((seller) => (
-                <tr key={seller.id} className="border-t border-white/8 hover:bg-white/4">
+                <tr key={seller.id} className={cx('border-t border-white/8 hover:bg-white/4', seller.coach === 'both' && 'bg-red-500/5', seller.coach === 'star' && 'bg-emerald-500/5')}>
                   <td className="px-2 py-3">
                     <p className="font-medium">{seller.name}</p>
                     <p className="text-xs text-muted-foreground">{seller.branchName} · #{seller.rank} {seller.floating ? tx('· متنقل', '· floating') : ''}</p>
                   </td>
                   <td className="num px-2 py-3">{money(seller.sales, locale)}</td>
                   <td className="num px-2 py-3">{seller.trx}</td>
-                  <td className="num px-2 py-3">{num(seller.upt, locale, 2)}</td>
-                  <td className="num px-2 py-3">{money(seller.atv, locale)}</td>
+                  <td className={cx('num px-2 py-3', seller.upt >= model.kpis.upt ? 'text-emerald-300' : 'text-amber-200')}>{num(seller.upt, locale, 2)}</td>
+                  <td className={cx('num px-2 py-3', seller.atv >= model.kpis.atv ? 'text-emerald-300' : 'text-amber-200')}>{money(seller.atv, locale)}</td>
                   <td className="px-2 py-3"><Pill tone={COACH[seller.coach].tone}>{tx(COACH[seller.coach].ar, COACH[seller.coach].en)}</Pill></td>
                   <td className="px-2 py-3"><Button onClick={() => setId(seller.id)}>{tx('توجيه', 'Coach')}</Button></td>
                 </tr>
@@ -173,7 +199,12 @@ export default function SellersView() {
   )
 }
 
-function Note({ title, body }: { title: string; body: string }) {
-  return <div className="rounded-2xl bg-muted/60 p-3"><p className="font-medium">{title}</p><p className="text-xs text-muted-foreground">{body}</p></div>
+function Note({ title, body, tone }: { title: string; body: string; tone?: 'good' | 'bad' | 'warn' | 'gold' }) {
+  return (
+    <div className={cx('rounded-2xl border-s-2 bg-muted/60 p-3', toneAccent(tone))}>
+      <p className="font-medium">{title}</p>
+      <p className="text-xs text-muted-foreground">{body}</p>
+    </div>
+  )
 }
 

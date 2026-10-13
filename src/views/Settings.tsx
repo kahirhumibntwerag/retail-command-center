@@ -6,7 +6,7 @@ import type { Segment } from '../types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button, Modal, PageHeader, Panel, Seg, Select } from '../components/kit'
+import { achievementBar, achievementTone, Button, cx, Modal, PageHeader, Panel, Pill, Seg, Select } from '../components/kit'
 
 const TABS = ['currency', 'segments', 'cashiers', 'targets'] as const
 type Tab = (typeof TABS)[number]
@@ -53,7 +53,10 @@ export default function SettingsView() {
             <Checkbox id="include-doha" checked={settings.includeDoha} onCheckedChange={(checked) => setSettings({ includeDoha: checked === true })} />
             <Label htmlFor="include-doha">{tx('أدخل الدوحة في الإجمالي بعد التحويل', 'Include Doha in the total after conversion')}</Label>
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">{settings.includeDoha ? tx('الدوحة داخلة الآن.', 'Doha is included.') : tx('الدوحة مستبعدة، وهذا هو الوضع الموصى به.', 'Doha is excluded, which is the recommended setup.')}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Pill tone={settings.includeDoha ? 'warn' : 'good'}>{settings.includeDoha ? tx('داخلة في الإجمالي', 'Included in total') : tx('مستبعدة (موصى به)', 'Excluded (recommended)')}</Pill>
+            <p className="text-sm text-muted-foreground">{settings.includeDoha ? tx('الدوحة داخلة الآن.', 'Doha is included.') : tx('الدوحة مستبعدة، وهذا هو الوضع الموصى به.', 'Doha is excluded, which is the recommended setup.')}</p>
+          </div>
         </Panel>
       )}
 
@@ -114,10 +117,14 @@ export default function SettingsView() {
             {dataset.branches.map((branch) => {
               const target = settings.targetOverrides[branch.id] ?? branch.target
               const ratio = target ? branch.sales / target : 0
+              const tone = achievementTone(ratio)
               return (
                 <li key={branch.id}>
-                  <div className="mb-1 flex justify-between text-sm"><span>{branch.name}</span><span className={`num ${ratio >= 1 ? 'text-emerald-300' : ratio < 0.9 ? 'text-red-300' : ''}`}>{percent(ratio, locale, 0)}</span></div>
-                  <div className="h-2 overflow-hidden rounded-full bg-white/8"><div className="h-full bg-primary" style={{ width: `${Math.min(100, ratio * 100)}%` }} /></div>
+                  <div className="mb-1 flex justify-between gap-2 text-sm">
+                    <span>{branch.name}</span>
+                    <Pill tone={tone ?? 'neutral'}>{percent(ratio, locale, 0)}</Pill>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-white/8"><div className={cx('h-full', achievementBar(tone))} style={{ width: `${Math.min(100, ratio * 100)}%` }} /></div>
                   <p className="mt-1 text-xs text-muted-foreground">{money(branch.sales, locale, branch.currency)} / {money(target, locale, branch.currency)}</p>
                 </li>
               )
@@ -127,7 +134,7 @@ export default function SettingsView() {
       )}
 
       <Panel className="mt-4">
-        <h2 className="text-lg font-semibold">{tx('بيانات أغسطس الافتراضية', 'August sample data')}</h2>
+        <h2 className="text-sm font-semibold sm:text-base">{tx('بيانات أغسطس الافتراضية', 'August sample data')}</h2>
         <p className="mt-2 text-sm leading-7 text-muted-foreground">{tx('هذا يستبدل الملف المرفوع ويعيد الفلاتر. الإعدادات المحفوظة تبقى.', 'This replaces the uploaded workbook and clears filters. Saved settings stay.')}</p>
         <div className="mt-3">
           <Button onClick={() => setConfirmReset(true)}>{tx('استعادة العينة', 'Restore sample')}</Button>
@@ -138,7 +145,7 @@ export default function SettingsView() {
           <h2 className="text-xl font-semibold">{tx('استعادة بيانات أغسطس؟', 'Restore the August sample?')}</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{tx('هذا يستبدل الملف المرفوع ويعيد الفلاتر. الإعدادات المحفوظة تبقى.', 'This replaces the uploaded workbook and clears filters. Saved settings stay.')}</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button tone="gold" onClick={() => { resetSample(); setConfirmReset(false); notify(tx('تمت استعادة عينة أغسطس', 'August sample restored')) }}>{tx('استعادة', 'Restore')}</Button>
+            <Button tone="danger" onClick={() => { resetSample(); setConfirmReset(false); notify(tx('تمت استعادة عينة أغسطس', 'August sample restored')) }}>{tx('استعادة', 'Restore')}</Button>
             <Button onClick={() => setConfirmReset(false)}>{tx('إلغاء', 'Cancel')}</Button>
           </div>
         </Modal>

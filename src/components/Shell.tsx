@@ -188,7 +188,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             >
               <Bell size={16} />
               <span className="hidden sm:inline">{tx('التنبيهات', 'Alerts')}</span>
-              <span className={cx('rounded-full px-1.5 text-xs font-semibold text-white', criticalCount ? 'bg-[#ff6b7d]' : 'bg-white/15 text-[#f7f4ee]')}>{model.alerts.length}</span>
+              <span className={cx('rounded-full px-1.5 text-xs font-semibold text-white', criticalCount ? 'bg-red-400' : 'bg-white/15 text-foreground')}>{model.alerts.length}</span>
             </button>
             <button type="button" onClick={() => store.setUploadOpen(true)} className="hidden h-11 shrink-0 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/80 sm:inline-flex" aria-label="Excel">
               <Upload size={16} />
@@ -220,7 +220,7 @@ export default function Shell({ children }: { children: ReactNode }) {
               <div className="mt-3 hidden sm:block">
                 <div className="mb-2 flex items-center gap-2">
                   <Pill tone={datasetTone(store.dataset.source)}>{store.dataset.source === 'sample' ? tx('عينة أغسطس 2026', 'August 2026 sample') : store.dataset.sourceName}</Pill>
-                  {!settings.includeDoha && <Pill>{tx('الدوحة مستبعدة من الإجمالي', 'Doha excluded from the total')}</Pill>}
+                  {!settings.includeDoha && <Pill tone="warn">{tx('الدوحة مستبعدة من الإجمالي', 'Doha excluded from the total')}</Pill>}
                 </div>
                 <div className="flex flex-wrap items-end gap-2">
                   <FilterFields />
@@ -234,7 +234,7 @@ export default function Shell({ children }: { children: ReactNode }) {
                 <h2 className="text-lg font-semibold">{tx('تصفية الأرقام', 'Filter the numbers')}</h2>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Pill tone={datasetTone(store.dataset.source)}>{store.dataset.source === 'sample' ? tx('عينة أغسطس 2026', 'August 2026 sample') : store.dataset.sourceName}</Pill>
-                  {!settings.includeDoha && <Pill>{tx('الدوحة مستبعدة من الإجمالي', 'Doha excluded from the total')}</Pill>}
+                  {!settings.includeDoha && <Pill tone="warn">{tx('الدوحة مستبعدة من الإجمالي', 'Doha excluded from the total')}</Pill>}
                 </div>
                 <div className="mt-4 flex flex-col gap-3">
                   <FilterFields />
@@ -247,7 +247,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             </>
           )}
         </div>
-        <div id="main" tabIndex={-1} className="min-w-0 px-3 py-4 pb-24 outline-none sm:px-6 sm:py-5 sm:pb-5">{children}</div>
+        <div id="main" tabIndex={-1} className="min-w-0 px-3 py-3 pb-24 outline-none sm:px-4 sm:py-3.5 sm:pb-4">{children}</div>
         <MobileTabBar />
       </SidebarInset>
 
@@ -274,7 +274,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           </div>
           <div className="space-y-3">
             {model.alerts.filter((alert) => alertFilter === 'all' || alert.severity === alertFilter).map((alert) => (
-              <article key={alert.id} className={cx('rounded-2xl border border-border border-s-4 p-3', alert.severity === 'critical' ? 'border-s-[#ff6b7d]' : 'border-s-[#f0b429]')}>
+              <article key={alert.id} className={cx('rounded-2xl border border-border border-s-4 p-3', alert.severity === 'critical' ? 'border-s-red-400/80 bg-red-500/10' : 'border-s-amber-400/80 bg-amber-500/5')}>
                 <div className="mb-2 flex items-start justify-between gap-3">
                   <h3 className="font-medium">{tx(alert.titleAr, alert.titleEn)}</h3>
                   <Pill tone={alert.severity === 'critical' ? 'bad' : 'warn'}>{alert.badge}</Pill>
@@ -317,7 +317,7 @@ export default function Shell({ children }: { children: ReactNode }) {
               }}
             />
           </label>
-          {uploadError && <p className="mt-3 text-sm text-[#ffb3bd]">{uploadError}</p>}
+          {uploadError && <p className="mt-3 text-sm text-red-300">{uploadError}</p>}
         </Modal>
       )}
 
